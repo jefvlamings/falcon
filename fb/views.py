@@ -65,8 +65,8 @@ class CreateView(View):
 class ReportView(View):
 
     # Get
-    def get(self, request, *args, **kwargs):
-        person = Person.objects.get(id=696944729)
+    def get(self, request, user_id):
+        person = Person.objects.get(id=user_id)
         return render(
             request,
             'report.html',
