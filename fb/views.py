@@ -9,8 +9,8 @@ from models import Person
 class IndexView(View):
 
     # Get
-    def get(self, request, *args, **kwargs):
-        user = User()
+    def get(self, request, id=0):
+        user = User(id)
         return render(
             request,
             'index.html',
@@ -45,20 +45,30 @@ class CreateView(View):
 
     # Fetch Data
     def fetch_data(self, user_id):
-        fb_user = User(user_id)
-        person = Person(
-            id=user_id,
-            first_name=fb_user.first_name,
-            middle_name=fb_user.middle_name,
-            last_name=fb_user.last_name,
-            gender=fb_user.gender,
-            birthday=fb_user.birthday,
-            address=fb_user.home_town,
-            significant_other=fb_user.significant_other_id,
-            relationship_status=fb_user.relationship_status,
-        )
-        person.save()
+
+        # Fetch and store the user
+        user = User(user_id)
+        self.store_user(user)
+
+        # Fetch and store all of its friends
+        # friends = user.friends
+        # for friend in friends:
+        #     self.store_user(friend)
+
         return True
+
+    # Store User data
+    def store_user(self, fb_user):
+        person = Person.objects.get(id=fb_user.id)
+        person.first_name = fb_user.first_name
+        person.middle_name = fb_user.middle_name
+        person.last_name = fb_user.last_name
+        person.gender = fb_user.gender
+        person.birthday = fb_user.birthday
+        person.address = fb_user.home_town
+        person.significant_other = fb_user.significant_other_id
+        # person.relationship_status = fb_user.relationship_status
+        person.save()
 
 
 # ReportView
@@ -84,8 +94,18 @@ class ConnectView(View):
         auth = Auth()
         if 'code' in request.GET:
             code = request.GET['code']
-            auth.set_access_token(code)
-            return redirect('facebook/')
+            access_token = auth.get_access_token(code)
+            if auth.validate_access_token(access_token) is True:
+                user_id = auth.get_user_id(access_token)
+                print user_id
+                person = Person(
+                    id=user_id,
+                    access_token=access_token,
+                )
+                person.save()
+                return redirect('/facebook/' + str(user_id))
+            else:
+                return HttpResponse('Something went wrong will validating the facebook access_token')
         else:
             url = auth.get_access_url()
             return redirect(url)

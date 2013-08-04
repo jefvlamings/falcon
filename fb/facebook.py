@@ -3,6 +3,7 @@ import datetime
 import urlparse
 from django.shortcuts import redirect
 from django.contrib.sessions.backends.db import SessionStore
+from fb.models import Person
 
 # Constants
 APP_ID = '160902533967876'
@@ -54,9 +55,9 @@ class Auth:
         response = requests.get(url)
         params = urlparse.parse_qs(response.content)
         if 'access_token' in params:
-            session = SessionStore()
-            session['access_token'] = params['access_token'][0]
-            session.save()
+            return params['access_token'][0]
+        else:
+            return None
 
     # Get App Token
     def get_app_token(self):
@@ -72,31 +73,49 @@ class Auth:
         else:
             return None
 
+    # Debug Access Token
+    def debug_access_token(self, access_token):
+        auth = Auth()
+        app_token = auth.get_app_token()
+        url = 'https://graph.facebook.com/debug_token' \
+              '?input_token=' + access_token + \
+              '&access_token=' + app_token
+        response = requests.get(url).json()
+        return response
+
+    # Validate access_token
+    def validate_access_token(self, access_token):
+        debug_data = self.debug_access_token(access_token)
+        if 'data' in debug_data:
+            return debug_data['data']['is_valid']
+        else:
+            return False
+
+    # Get Valid User Id
+    def get_user_id(self, access_token):
+        debug_data = self.debug_access_token(access_token)
+        if 'data' in debug_data:
+            return debug_data['data']['user_id']
+        else:
+            return None
+
 
 # Api
 class Api:
 
     access_token = ''
 
-    def connect(self):
-        session = SessionStore(session_key='68uc5rnjsp9szj46k6g4nrdufppmeiol')
-        if 'access_token' in session:
-            self.access_token = session['access_token']
-            return self.debug_access_token()
+    def connect(self, id):
+        try:
+            person = Person.objects.get(id=id)
+        except Person.DoesNotExist:
+            person = None
+
+        if person is not None and person.access_token is not '':
+            auth = Auth()
+            return auth.validate_access_token(person.access_token)
         else:
             return redirect('facebook/connect/')
-
-    def debug_access_token(self):
-        auth = Auth()
-        app_token = auth.get_app_token()
-        url = 'https://graph.facebook.com/debug_token' \
-              '?input_token=' + self.access_token + \
-              '&access_token=' + app_token
-        response = requests.get(url).json()
-        if 'data' in response:
-            return response['data']['is_valid']
-        else:
-            return False
 
     def user(self, user_id=None):
         if user_id is None:
@@ -169,7 +188,7 @@ class User:
 
     def __init__(self, id=None):
         self.fb = Api()
-        if self.fb.connect() is True:
+        if self.fb.connect(id) is True:
             self.fb_user = self.fb.user(id)
         else:
             raise Exception('Could not connect to Facebook')
@@ -234,7 +253,7 @@ class User:
     def birthday(self):
         if 'birthday' in self.fb_user:
             birthday = self.fb_user['birthday']
-            return datetime.datetime.strptime(birthday, '%d/%m/%Y')
+            return datetime.datetime.strptime(birthday, '%m/%d/%Y')
         else:
             return None
 
@@ -269,14 +288,12 @@ class User:
 
     @property
     def friends(self):
-        friends = self.fb.friends(self.id)
+        fb_friends = self.fb.friends(self.id)
+        friends = []
+        for fb_friend in fb_friends:
+            friend = User(fb_friend['id'])
+            friends.append(friend)
         return friends
-
-    def statuses_by_date(self, descending=False):
-        return sorted(self.statuses, key=lambda k: k['date'], reverse=descending)
-
-    def statuses_by_popularity(self, descending=True):
-        return sorted(self.statuses, key=lambda k: k['number_of_likes'], reverse=descending)
 
     def summarize_status(self, status):
         output = {
@@ -300,13 +317,3 @@ class User:
             return place['name']
         else:
             return ''
-
-# # Test cases
-# user = User()
-# friends = user.friends
-# most_popular_statuses = []
-# for friend in friends:
-#     user = User(friend['id'])
-#     user_most_popular_status = user.statuses_by_popularity(True)[0]
-#     most_popular_statuses.append(user_most_popular_status)
-# print(most_popular_statuses)
