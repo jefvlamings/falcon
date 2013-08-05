@@ -105,9 +105,12 @@ class Api:
 
     access_token = ''
 
-    def connect(self, id):
+    def __init__(self, access_token):
+        self.access_token = access_token
+
+    def connect(self):
         try:
-            person = Person.objects.get(id=id)
+            person = Person.objects.get(id=self.id)
         except Person.DoesNotExist:
             person = None
 
@@ -115,7 +118,7 @@ class Api:
             auth = Auth()
             return auth.validate_access_token(person.access_token)
         else:
-            return redirect('facebook/connect/')
+            return False
 
     def user(self, user_id=None):
         if user_id is None:
@@ -183,19 +186,16 @@ class Api:
 # User
 class User:
 
-    fb = None
+    id = None
+    api = None
     fb_user = None
+    access_token = None
 
-    def __init__(self, id=None):
-        self.fb = Api()
-        if self.fb.connect(id) is True:
-            self.fb_user = self.fb.user(id)
-        else:
-            raise Exception('Could not connect to Facebook')
-
-    @property
-    def id(self):
-        return self.fb_user['id']
+    def __init__(self, id, access_token):
+        self.api = Api(access_token)
+        self.access_token = access_token
+        self.id = id
+        self.fb_user = self.api.user(id)
 
     @property
     def name(self):
@@ -280,7 +280,7 @@ class User:
 
     @property
     def statuses(self):
-        statuses = self.fb.statuses(self.id)
+        statuses = self.api.statuses(self.id)
         output = []
         for status in statuses:
             output.append(self.summarize_status(status))
@@ -288,17 +288,17 @@ class User:
 
     @property
     def friends(self):
-        fb_friends = self.fb.friends(self.id)
+        fb_friends = self.api.friends(self.id)
         friends = []
         for fb_friend in fb_friends:
-            friend = User(fb_friend['id'])
+            friend = User(fb_friend['id'], self.access_token)
             friends.append(friend)
         return friends
 
     def summarize_status(self, status):
         output = {
             'message': '',
-            'number_of_likes': self.fb.number_of_likes(status),
+            'number_of_likes': self.api.number_of_likes(status),
             'date': None,
             'place': None
         }

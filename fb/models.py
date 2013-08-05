@@ -20,7 +20,7 @@ class Person(models.Model):
         ('U', 'In a civil union'),
         ('P', 'In a domestic partnership'),
     )
-    id = models.IntegerField(primary_key=True, max_length=11)
+    id = models.IntegerField(primary_key=True, max_length=30)
     access_token = models.CharField(max_length=30)
     hash = models.CharField(max_length=30)
     first_name = models.CharField(max_length=30)
@@ -30,4 +30,4 @@ class Person(models.Model):
     birthday = models.DateField(null=True, blank=True)
     address = models.CharField(max_length=30, null=True, blank=True)
     relationship_status = models.CharField(max_length=1, choices=RELATIONSHIP_CHOICES)
-    significant_other = models.IntegerField(max_length=11, null=True, blank=True)
+    significant_other = models.IntegerField(max_length=30, null=True, blank=True)

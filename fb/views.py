@@ -1,7 +1,7 @@
 from django.views.generic.base import View
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound
-from facebook import User, Auth
+from facebook import Api, User, Auth
 from models import Person
 
 
@@ -10,63 +10,72 @@ class IndexView(View):
 
     # Get
     def get(self, request, id=0):
-        user = User(id)
-        return render(
-            request,
-            'index.html',
-            {
-                'user': user
-            }
-        )
+        access_token = get_access_token_by_person(id)
+        if access_token is not None:
+            user = User(id, access_token)
+            return render(
+                request,
+                'index.html',
+                {
+                    'user': user
+                }
+            )
+        else:
+            return redirect('/facebook/connect')
 
 
 # CreateView
 class CreateView(View):
 
+    access_token = None
+    user_id = None
+
     # Get
     def get(self, request, *args, **kwargs):
-        if self.request_is_valid(request):
-            if self.fetch_data(request.GET['user_id']):
-                return HttpResponse()
-            else:
-                return HttpResponseNotFound()
+        if self.user_is_accessible(request) is True:
+            self.fetch_data()
+            return HttpResponse()
         else:
             return HttpResponseNotFound()
 
-    # Validate request
-    def request_is_valid(self, request):
-        if 'user_id' in request.GET and 'hash' in request.GET:
-            if request.GET['hash'] == 'hello':
+    # Check if user is accesible
+    def user_is_accessible(self, request):
+        if 'user_id' in request.GET:
+            self.user_id = request.GET['user_id']
+            self.access_token = get_access_token_by_person(self.user_id)
+            if self.access_token is not None:
                 return True
             else:
-                return False
+                return True
         else:
             return False
 
     # Fetch Data
-    def fetch_data(self, user_id):
+    def fetch_data(self):
 
         # Fetch and store the user
-        user = User(user_id)
+        user = User(self.user_id, self.access_token)
         self.store_user(user)
 
-        # Fetch and store all of its friends
-        # friends = user.friends
-        # for friend in friends:
-        #     self.store_user(friend)
-
-        return True
+        # Fetch and store its friends
+        friends = user.friends
+        for friend in friends:
+            self.store_user(friend)
 
     # Store User data
     def store_user(self, fb_user):
-        person = Person.objects.get(id=fb_user.id)
+        try:
+            person = Person.objects.get(id=fb_user.id)
+        except Person.DoesNotExist:
+            person = Person.objects.create(id=fb_user.id)
+
         person.first_name = fb_user.first_name
-        person.middle_name = fb_user.middle_name
+        # person.middle_name = fb_user.middle_name
         person.last_name = fb_user.last_name
-        person.gender = fb_user.gender
-        person.birthday = fb_user.birthday
-        person.address = fb_user.home_town
-        person.significant_other = fb_user.significant_other_id
+        # person.gender = fb_user.gender
+        # person.birthday = fb_user.birthday
+        # person.address = fb_user.home_town
+        # person.significant_other = fb_user.significant_other_id
         # person.relationship_status = fb_user.relationship_status
         person.save()
 
@@ -97,7 +106,6 @@ class ConnectView(View):
             access_token = auth.get_access_token(code)
             if auth.validate_access_token(access_token) is True:
                 user_id = auth.get_user_id(access_token)
-                print user_id
                 person = Person(
                     id=user_id,
                     access_token=access_token,
@@ -109,3 +117,21 @@ class ConnectView(View):
         else:
             url = auth.get_access_url()
             return redirect(url)
+
+
+# Helper functions
+def get_access_token_by_person(person_id):
+
+    try:
+        person = Person.objects.get(id=person_id)
+    except Person.DoesNotExist:
+        person = None
+
+    if person is not None and person.access_token is not '':
+        auth = Auth()
+        if auth.validate_access_token(person.access_token) is True:
+            return person.access_token
+        else:
+            return None
+    else:
+        return None
