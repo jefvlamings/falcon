@@ -1,14 +1,12 @@
 import requests
 import datetime
 import urlparse
-from django.shortcuts import redirect
-from django.contrib.sessions.backends.db import SessionStore
-from fb.models import Person
+from models import Person
 
 # Constants
 APP_ID = '160902533967876'
 APP_SECRET = 'e2bdd68bedc3243e3a1dbdaf02c81564'
-REDIRECT_URI = 'http://127.0.0.1:8000/facebook/connect/'
+REDIRECT_URI = 'http://127.0.0.1:8000/connect/'
 SCOPE = 'publish_stream, ' \
         'user_online_presence, ' \
         'friends_online_presence, ' \
@@ -123,13 +121,13 @@ class Api:
     def user(self, user_id=None):
         if user_id is None:
             user_id = 'me'
-        return self.request(user_id)
+        return self.request(str(user_id))
 
     def user_id(self):
         return self.user()['id']
 
     def request(self, request):
-        url = 'https://graph.facebook.com/' + request + '?access_token=' + self.access_token
+        url = 'https://graph.facebook.com/' + str(request) + '?access_token=' + str(self.access_token)
         response = requests.get(url).json()
         if 'paging' in response:
             data = response['data']
@@ -153,12 +151,12 @@ class Api:
     def friends(self, user_id=None):
         if user_id is None:
             user_id = self.user_id()
-        return self.request(user_id + '/friends')
+        return self.request(str(user_id) + '/friends')
 
     def statuses(self, user_id=None):
         if user_id is None:
             user_id = self.user_id()
-        return self.request(user_id + '/statuses')
+        return self.request(str(user_id) + '/statuses')
 
     def likes(self, object):
         if 'likes' in object:
@@ -180,7 +178,7 @@ class Api:
     def locations(self, user_id=None):
         if user_id is None:
             user_id = self.user_id()
-        return self.request(user_id + '/locations')
+        return self.request(str(user_id) + '/locations')
 
 
 # User
@@ -231,9 +229,9 @@ class User:
             elif gender == 'female':
                 return 'F'
             else:
-                return None
+                return 'X'
         else:
-            return None
+            return 'X'
 
     @property
     def home_town(self):
@@ -253,30 +251,37 @@ class User:
     def birthday(self):
         if 'birthday' in self.fb_user:
             birthday = self.fb_user['birthday']
-            return datetime.datetime.strptime(birthday, '%m/%d/%Y')
+            date_items_count = len(birthday.split('/'))
+            if date_items_count is 1:
+                format = '%m'
+            elif date_items_count is 2:
+                format = '%m/%d'
+            elif date_items_count is 3:
+                format = '%m/%d/%Y'
+            return datetime.datetime.strptime(birthday, format)
         else:
             return None
 
     @property
     def relationship_status(self):
         statuses = {
-            'Single': 'S',
-            'In a Relationship': 'R',
-            'Engaged': 'E',
-            'Married': 'M',
-            'Its complicated': 'C',
-            'In an open relationship': 'O',
-            'Widowed': 'W',
-            'Separated': 'X',
-            'Divorced': 'D',
-            'In a civil union': 'U',
-            'In a domestic partnership': 'P',
+            'single': 'S',
+            'in a relationship': 'R',
+            'engaged': 'E',
+            'married': 'M',
+            'it\'s complicated': 'C',
+            'in an open relationship': 'O',
+            'widowed': 'W',
+            'separated': 'X',
+            'divorced': 'D',
+            'in a civil union': 'U',
+            'in a domestic partnership': 'P',
         }
         if 'relationship_status' in self.fb_user:
-            status = self.fb_user['relationship_status']
+            status = self.fb_user['relationship_status'].lower()
             return statuses[status]
         else:
-            return None
+            return 'X'
 
     @property
     def statuses(self):
