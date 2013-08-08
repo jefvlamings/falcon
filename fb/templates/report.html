@@ -10,3 +10,17 @@
     <li>Gender: {{ person.gender }}</li>
     <li>Birthday: {{ person.birthday }}</li>
 </ul>
+
+<h3>Youngest friends</h3>
+<ol>
+{% for friend in youngest_friends %}
+    <li>{{ friend.first_name }} {{ friend.last_name }} ({{ friend.birthday }})</li>
+{% endfor %}
+</ol>
+
+<h3>Oldest friends</h3>
+<ol>
+{% for friend in oldest_friends %}
+    <li>{{ friend.first_name }} {{ friend.last_name }} ({{ friend.birthday }})</li>
+{% endfor %}
+</ol>

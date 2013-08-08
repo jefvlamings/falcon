@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound
 from facebook import User, Auth
 from models import Person
+import datetime
 
 
 # IndexView
@@ -65,6 +66,7 @@ class CreateView(View):
         except Person.DoesNotExist:
             person = Person.objects.create(fb_id=fb_user.id)
 
+        person.add_relationship(self.person)
         person.first_name = fb_user.first_name
         person.middle_name = fb_user.middle_name
         person.last_name = fb_user.last_name
@@ -90,7 +92,9 @@ class ReportView(View):
             request,
             'report.html',
             {
-                'person': person
+                'person': person,
+                'youngest_friends': person.friends().order_by('birthday').reverse()[:5],
+                'oldest_friends': person.friends().exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5]
             }
         )
 
