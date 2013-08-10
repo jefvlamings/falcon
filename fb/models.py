@@ -1,4 +1,5 @@
 from django.db import models
+import geo
 
 
 # Create your models here.
@@ -46,6 +47,43 @@ class Person(models.Model):
 
     def friends(self):
         return self.relationships.all()
+
+    def nearest_hometowns(self):
+        friends = self.friends()
+        friends_by_location = []
+        for friend in friends:
+            distance = self.distance_between_friend(friend)
+            if distance is None:
+                continue
+            else:
+                friends_by_location.append({
+                    'distance': distance,
+                    'friend': friend
+                })
+
+        # Return a sorted list (by distance)
+        return sorted(friends_by_location, key=lambda k: k['distance'])
+
+    def distance_between_friend(self, friend):
+        if friend.hometown() is None:
+            return None
+        lat1 = self.hometown().latitude
+        lng1 = self.hometown().longitude
+        lat2 = friend.hometown().latitude
+        lng2 = friend.hometown().longitude
+        return geo.distance(lng1, lat1, lng2, lat2)
+
+    def hometown(self):
+        try:
+            return Location.objects.get(person=self, type='H')
+        except Location.DoesNotExist:
+            return None
+
+    def locations(self):
+        try:
+            return Location.objects.get(person=self).all()
+        except Location.DoesNotExist:
+            return None
 
 
 class Relationship(models.Model):

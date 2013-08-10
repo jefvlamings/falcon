@@ -36,6 +36,49 @@ class IndexView(View):
             return redirect('/connect')
 
 
+class ConnectView(View):
+
+    def get(self, request, *args, **kwargs):
+
+        """
+        If an access_code has been given, we should make a request to get the access_token from it. If no access_code
+        was given, we should first ask for one
+        """
+
+        auth = Auth()
+
+        # Check if a code had been provided in the request
+        if 'code' in request.GET:
+
+            # Request and validate an access_token for a given access_code
+            code = request.GET['code']
+            access_token = auth.get_access_token(code)
+            if auth.validate_access_token(access_token) is True:
+                user_id = auth.get_user_id(access_token)
+
+                # First check if a Person already exists for this facebook user id
+                try:
+                    person = Person.objects.get(fb_id=user_id)
+                except Person.DoesNotExist:
+                    person = Person.objects.create(fb_id=user_id)
+
+                # Store the access_token in the Person db
+                person.access_token = access_token
+                person.save()
+
+                # Redirect the user to notify if all went well
+                return redirect('/facebook/' + str(person.pk))
+
+            # Something went wrong message
+            else:
+                return HttpResponse('Something went wrong will validating the facebook access_token')
+
+        # Request an access code
+        else:
+            url = auth.get_access_url()
+            return redirect(url)
+
+
 class CreateView(View):
 
     person = None
@@ -102,32 +145,40 @@ class CreateView(View):
 
     def fetch_coordinates(self):
 
-        # To-do: group same locations...
-
+        # Get all unique location names for which no latitude has been set
         locations = Location.objects.filter(latitude__isnull=True)
         location_names = []
         for location in locations:
             location_names.append(location.name)
+        locations_names_unique = list(set(location_names))
 
+        # Fetch all geocoding data for these location names
         mapquest = Mapquest()
-        geo_data = mapquest.batch_request_names(location_names)
+        geo_data = mapquest.batch_request_names(locations_names_unique)
+
+        # Process and store all geocoding data
         self.store_coordinates(geo_data)
 
     def store_coordinates(self, geo_data):
         for geo_entry in geo_data:
+
+            # Get all locations from the db that have the same name as the current location name
             try:
                 locations = Location.objects.filter(name=geo_entry['providedLocation']['location'])
             except Location.DoesNotExist:
                 continue
 
+            # Check if Mapquest provided coordinates for this name
+            try:
+                coordinates = geo_entry['locations'][0]['latLng']
+            except IndexError:
+                continue
+
+            # Set the coordinates and save the location
             for location in locations:
-                location.latitude = geo_entry['locations'][0]['latLng']['lat']
-                location.longitude = geo_entry['locations'][0]['latLng']['lng']
+                location.latitude = coordinates['lat']
+                location.longitude = coordinates['lng']
                 location.save()
-
-
-
-
 
 
 class ReportView(View):
@@ -147,49 +198,8 @@ class ReportView(View):
             {
                 'person': person,
                 'youngest_friends': person.friends().order_by('birthday').reverse()[:5],
-                'oldest_friends': person.friends().exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5]
+                'oldest_friends': person.friends().exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5],
+                'nearest_hometowns': person.nearest_hometowns()[:5],
+                'furthest_hometowns': person.nearest_hometowns()[::-1][:5],
             }
         )
-
-
-class ConnectView(View):
-
-    def get(self, request, *args, **kwargs):
-
-        """
-        If an access_code has been given, we should make a request to get the access_token from it. If no access_code
-        was given, we should first ask for one
-        """
-
-        auth = Auth()
-
-        # Check if a code had been provided in the request
-        if 'code' in request.GET:
-
-            # Request and validate an access_token for a given access_code
-            code = request.GET['code']
-            access_token = auth.get_access_token(code)
-            if auth.validate_access_token(access_token) is True:
-                user_id = auth.get_user_id(access_token)
-
-                # First check if a Person already exists for this facebook user id
-                try:
-                    person = Person.objects.get(fb_id=user_id)
-                except Person.DoesNotExist:
-                    person = Person.objects.create(fb_id=user_id)
-
-                # Store the access_token in the Person db
-                person.access_token = access_token
-                person.save()
-
-                # Redirect the user to notify if all went well
-                return redirect('/facebook/' + str(person.pk))
-
-            # Something went wrong message
-            else:
-                return HttpResponse('Something went wrong will validating the facebook access_token')
-
-        # Request an access code
-        else:
-            url = auth.get_access_url()
-            return redirect(url)
