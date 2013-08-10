@@ -127,7 +127,8 @@ class Api:
         return self.user()['id']
 
     def request(self, request):
-        url = 'https://graph.facebook.com/' + str(request) + '?access_token=' + str(self.access_token)
+        url = 'https://graph.facebook.com/' + str(request) + \
+              '?access_token=' + str(self.access_token)
         response = requests.get(url).json()
         if 'paging' in response:
             data = response['data']

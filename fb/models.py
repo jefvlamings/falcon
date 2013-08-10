@@ -3,18 +3,20 @@ from django.db import models
 
 # Create your models here.
 class Person(models.Model):
+
     GENDER_CHOICES = (
         ('M', 'Male'),
         ('F', 'Female'),
         ('X', 'Unknown'),
     )
+
     RELATIONSHIP_CHOICES = (
         ('S', 'Single'),
-        ('R', 'In a relationshop'),
+        ('R', 'In a relationship'),
         ('E', 'Engaged'),
         ('M', 'Married'),
         ('C', 'Its complicated'),
-        ('O', 'In an open relationshop'),
+        ('O', 'In an open relationship'),
         ('W', 'Widowed'),
         ('Q', 'Separated'),
         ('D', 'Divorced'),
@@ -22,6 +24,7 @@ class Person(models.Model):
         ('P', 'In a domestic partnership'),
         ('X', 'Unknown'),
     )
+
     fb_id = models.BigIntegerField(max_length=30, null=True, blank=True)
     relationships = models.ManyToManyField('self', through='Relationship', symmetrical=False, related_name='related_to+')
     access_token = models.CharField(max_length=30)
@@ -31,7 +34,6 @@ class Person(models.Model):
     last_name = models.CharField(max_length=30, null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     birthday = models.DateField(null=True, blank=True)
-    address = models.TextField(null=True, blank=True)
     relationship_status = models.CharField(max_length=1, choices=RELATIONSHIP_CHOICES)
     significant_other = models.BigIntegerField(max_length=30, null=True, blank=True)
 
@@ -43,10 +45,25 @@ class Person(models.Model):
         Relationship.objects.filter(from_person=self, to_person=person).delete()
 
     def friends(self):
-        print self.relationships.all()
         return self.relationships.all()
 
 
 class Relationship(models.Model):
     from_person = models.ForeignKey(Person, related_name='from_people')
     to_person = models.ForeignKey(Person, related_name='to_people')
+
+
+class Location(models.Model):
+
+    LOCATION_TYPES = (
+        ('H', 'Hometown'),
+        ('C', 'Current location'),
+        ('P', 'Photo'),
+        ('A', 'Album'),
+    )
+
+    person = models.ForeignKey('Person')
+    name = models.TextField(null=True, blank=True)
+    latitude = models.CharField(max_length=30, null=True, blank=True)
+    longitude = models.CharField(max_length=30, null=True, blank=True)
+    type = models.CharField(max_length=1, choices=LOCATION_TYPES)
