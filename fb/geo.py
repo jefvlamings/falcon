@@ -7,6 +7,10 @@ def distance(lon1, lat1, lon2, lat2):
     Calculate the great circle distance between two points
     on the earth (specified in decimal degrees)
     """
+
+    if lon1 is None or lat1 is None or lon2 is None or lat2 is None:
+        return None
+
     # convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(radians, [float(lon1), float(lat1), float(lon2), float(lat2)])
     # haversine formula
@@ -40,9 +44,9 @@ class Mapquest:
         response = []
         while len(names) > 0:
             names_bit = names[0:99]
-            response.append(self.batch_request_names_bit(names_bit))
+            response += self.batch_request_names_bit(names_bit)
             names = names[99:]
-        return response[0]
+        return response
 
     def batch_request_names_bit(self, names):
         request_string = ''

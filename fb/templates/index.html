@@ -1,3 +1,11 @@
-<h1>Hi, {{ user.name }}</h1>
+{% extends "base.html" %}
+{% block content %}
 
-<h2>We're building your report!</h2>
+    <h1>Hi, {{ user.name }}</h1>
+
+    <h2>What do you want to do?</h2>
+
+    <a href="/create/{{ person.id }}" class="btn btn-default">Create report</a>
+    <a href="/report/{{ person.id }}" class="btn btn-default">Show report</a>
+
+{% endblock %}

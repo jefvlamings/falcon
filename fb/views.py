@@ -5,6 +5,7 @@ from facebook import User, Auth
 from geo import Mapquest
 from models import Person, Location
 import datetime
+import json
 
 
 class IndexView(View):
@@ -29,7 +30,8 @@ class IndexView(View):
                 request,
                 'index.html',
                 {
-                    'user': user
+                    'user': user,
+                    'person': person
                 }
             )
         else:
@@ -108,9 +110,13 @@ class CreateView(View):
         self.store_user(user)
 
         # # Fetch and store its friends
-        # friends = user.friends
-        # for friend in friends:
-        #     self.store_user(friend)
+        friends_processed = 0
+        for fb_friend in user.friends:
+            friend = User(fb_friend['id'], self.person.access_token)
+            self.store_user(friend)
+            friends_processed += 1
+            self.person.progress = (float(friends_processed)/len(user.friends))*100
+            self.person.save()
 
         # Fetch and store coordinates
         self.fetch_coordinates()
@@ -181,25 +187,50 @@ class CreateView(View):
                 location.save()
 
 
+class ProgressView(View):
+
+    def get(self, request, id):
+        try:
+            person = Person.objects.get(pk=id)
+            import decimal
+            progress = round(decimal.Decimal(person.progress), 2)
+            json_data = json.dumps(progress);
+            return HttpResponse(json_data, mimetype="application/json")
+        except Person.DoesNotExist:
+            return HttpResponseNotFound()
+
+
 class ReportView(View):
+
+    person = None
 
     def get(self, request, id):
 
         # First check if a Person exists for this id
         try:
-            person = Person.objects.get(pk=id)
+            self.person = Person.objects.get(pk=id)
         except Person.DoesNotExist:
             return HttpResponseNotFound()
 
-        # Render the report to 'report.html'
-        return render(
-            request,
-            'report.html',
-            {
-                'person': person,
-                'youngest_friends': person.friends().order_by('birthday').reverse()[:5],
-                'oldest_friends': person.friends().exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5],
-                'nearest_hometowns': person.nearest_hometowns()[:5],
-                'furthest_hometowns': person.nearest_hometowns()[::-1][:5],
-            }
-        )
+        # If the report is not yet ready, show a status of the report
+        if self.person.progress < 100:
+            return render(
+                request,
+                'status.html',
+                {
+                    'person': self.person,
+                }
+            )
+        # Show the report
+        else:
+            return render(
+                request,
+                'report.html',
+                {
+                    'person': self.person,
+                    'youngest_friends': self.person.friends().order_by('birthday').reverse()[:5],
+                    'oldest_friends': self.person.friends().exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5],
+                    'nearest_hometowns': self.person.nearest_hometowns()[:5],
+                    'furthest_hometowns': self.person.nearest_hometowns()[::-1][:5],
+                }
+            )

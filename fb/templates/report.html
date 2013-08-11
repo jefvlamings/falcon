@@ -1,51 +1,56 @@
-<h1>Report</h1>
+{% extends "base.html" %}
+{% block content %}
 
-<h3>Personal info</h3>
-<img src="https://graph.facebook.com/{{ person.fb_id }}/picture?type=large" alt="{{ friend.first_name }} {{ friend.last_name }}">
-<ul>
-    <li>First name: {{ person.first_name }}</li>
-    <li>Middle name: {{ person.middle_name }}</li>
-    <li>Last name: {{ person.last_name }}</li>
-    <li>Gender: {{ person.gender }}</li>
-    <li>Birthday: {{ person.birthday }}</li>
-</ul>
+    <h1>Report</h1>
 
-<h3>Youngest friends</h3>
-<ol>
-{% for friend in youngest_friends %}
-    <li>
-        <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
-        {{ friend.first_name }} {{ friend.last_name }} ({{ friend.birthday }})
-    </li>
-{% endfor %}
-</ol>
+    <h3>Personal info</h3>
+    <img src="https://graph.facebook.com/{{ person.fb_id }}/picture?type=large" alt="{{ friend.first_name }} {{ friend.last_name }}">
+    <ul>
+        <li>First name: {{ person.first_name }}</li>
+        <li>Middle name: {{ person.middle_name }}</li>
+        <li>Last name: {{ person.last_name }}</li>
+        <li>Gender: {{ person.gender }}</li>
+        <li>Birthday: {{ person.birthday }}</li>
+    </ul>
 
-<h3>Oldest friends</h3>
-<ol>
-{% for friend in oldest_friends %}
-    <li>
-        <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
-        {{ friend.first_name }} {{ friend.last_name }} ({{ friend.birthday }})
-    </li>
-{% endfor %}
-</ol>
+    <h3>Youngest friends</h3>
+    <ol>
+    {% for friend in youngest_friends %}
+        <li>
+            <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
+            {{ friend.first_name }} {{ friend.last_name }} ({{ friend.birthday }})
+        </li>
+    {% endfor %}
+    </ol>
 
-<h3>Nearest friends</h3>
-<ol>
-{% for hometown in nearest_hometowns %}
-    <li>
-        <img src="https://graph.facebook.com/{{ hometown.friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
-        {{ hometown.friend.first_name }} {{ hometown.friend.last_name }} ({{ hometown.distance|floatformat:0 }} km)
-    </li>
-{% endfor %}
-</ol>
+    <h3>Oldest friends</h3>
+    <ol>
+    {% for friend in oldest_friends %}
+        <li>
+            <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
+            {{ friend.first_name }} {{ friend.last_name }} ({{ friend.birthday }})
+        </li>
+    {% endfor %}
+    </ol>
 
-<h3>Furthest friends</h3>
-<ol>
-{% for hometown in furthest_hometowns %}
-    <li>
-        <img src="https://graph.facebook.com/{{ hometown.friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
-        {{ hometown.friend.first_name }} {{ hometown.friend.last_name }} ({{ hometown.distance|floatformat:0 }} km)
-    </li>
-{% endfor %}
-</ol>
+    <h3>Nearest friends</h3>
+    <ol>
+    {% for hometown in nearest_hometowns %}
+        <li>
+            <img src="https://graph.facebook.com/{{ hometown.friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
+            {{ hometown.friend.first_name }} {{ hometown.friend.last_name }} ({{ hometown.distance|floatformat:0 }} km)
+        </li>
+    {% endfor %}
+    </ol>
+
+    <h3>Furthest friends</h3>
+    <ol>
+    {% for hometown in furthest_hometowns %}
+        <li>
+            <img src="https://graph.facebook.com/{{ hometown.friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
+            {{ hometown.friend.first_name }} {{ hometown.friend.last_name }} ({{ hometown.distance|floatformat:0 }} km)
+        </li>
+    {% endfor %}
+    </ol>
+
+{% endblock %}

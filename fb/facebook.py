@@ -111,75 +111,40 @@ class Api:
             person = Person.objects.get(id=self.id)
         except Person.DoesNotExist:
             person = None
-
         if person is not None and person.access_token is not '':
             auth = Auth()
             return auth.validate_access_token(person.access_token)
         else:
             return False
 
-    def user(self, user_id=None):
-        if user_id is None:
-            user_id = 'me'
-        return self.request(str(user_id))
-
-    def user_id(self):
-        return self.user()['id']
-
-    def request(self, request):
+    def call(self, request):
         url = 'https://graph.facebook.com/' + str(request) + \
               '?access_token=' + str(self.access_token)
         response = requests.get(url).json()
-        if 'paging' in response:
+        if 'error' in response:
+            error = response['error']
+            raise Exception('Facebook status: [' + str(error['code']) + '] ' + error['message'])
+            return None
+        else:
+            return response
+
+    def request(self, request):
+        response = self.call(request)
+        if 'data' in response:
             data = response['data']
-            nextURL = response['paging']['next']
-            data += self.batch_request(nextURL)
+            # while self.more_data(response):
+            #     next = response['paging']['next']
+            #     data += self.request(next)
+            return data
         else:
-            data = response
-        return data
+            return response
 
-    def batch_request(self, url):
-        response = requests.get(url).json()
-        data = response['data']
-        if 'paging' in response:
-            batch = response['paging']
-            if 'next' in batch:
-                nextURL = batch['next']
-                data += self.batch_request(nextURL)
-
-        return data
-
-    def friends(self, user_id=None):
-        if user_id is None:
-            user_id = self.user_id()
-        return self.request(str(user_id) + '/friends')
-
-    def statuses(self, user_id=None):
-        if user_id is None:
-            user_id = self.user_id()
-        return self.request(str(user_id) + '/statuses')
-
-    def likes(self, object):
-        if 'likes' in object:
-            likes = object['likes']
-            data = object['likes']['data']
-            if 'paging' in likes:
-                batch = likes['paging']
-                if 'next' in batch:
-                    nextURL = batch['next']
-                    data += self.batch_request(nextURL)
-        else:
-            data = {}
-        return data
-
-    def number_of_likes(self, object):
-        likes = self.likes(object)
-        return len(likes)
-
-    def locations(self, user_id=None):
-        if user_id is None:
-            user_id = self.user_id()
-        return self.request(str(user_id) + '/locations')
+    def more_data(self, response):
+        try:
+            next = response['paging']['next']
+            return True
+        except KeyError:
+            return False
 
 
 # User
@@ -194,36 +159,39 @@ class User:
         self.api = Api(access_token)
         self.access_token = access_token
         self.id = id
-        self.fb_user = self.api.user(id)
+        self.fb_user = self.api.request(id)
 
     @property
     def name(self):
-        return self.fb_user['name']
+        try:
+            return self.fb_user['name']
+        except KeyError:
+            return ''
 
     @property
     def first_name(self):
-        if 'first_name' in self.fb_user:
+        try:
             return self.fb_user['first_name']
-        else:
+        except KeyError:
             return ''
 
     @property
     def middle_name(self):
-        if 'middle_name' in self.fb_user:
+        try:
             return self.fb_user['middle_name']
-        else:
+        except KeyError:
             return ''
 
     @property
     def last_name(self):
-        if 'last_name' in self.fb_user:
+        try:
             return self.fb_user['last_name']
-        else:
+        except KeyError:
             return ''
 
     @property
     def gender(self):
-        if 'gender' in self.fb_user:
+        try:
             gender = self.fb_user['gender']
             if gender == 'male':
                 return 'M'
@@ -231,26 +199,26 @@ class User:
                 return 'F'
             else:
                 return 'X'
-        else:
+        except KeyError:
             return 'X'
 
     @property
     def home_town(self):
-        if 'hometown' in self.fb_user:
-            return self.place_name(self.fb_user['hometown'])
-        else:
+        try:
+            return self.fb_user['hometown']['name']
+        except KeyError:
             return None
 
     @property
     def significant_other_id(self):
-        if 'significant_other' in self.fb_user:
+        try:
             return self.fb_user['significant_other']['id']
-        else:
+        except KeyError:
             return None
 
     @property
     def birthday(self):
-        if 'birthday' in self.fb_user:
+        try:
             birthday = self.fb_user['birthday']
             date_items_count = len(birthday.split('/'))
             if date_items_count is 1:
@@ -260,7 +228,7 @@ class User:
             elif date_items_count is 3:
                 format = '%m/%d/%Y'
             return datetime.datetime.strptime(birthday, format)
-        else:
+        except KeyError:
             return None
 
     @property
@@ -278,28 +246,23 @@ class User:
             'in a civil union': 'U',
             'in a domestic partnership': 'P',
         }
-        if 'relationship_status' in self.fb_user:
+        try:
             status = self.fb_user['relationship_status'].lower()
             return statuses[status]
-        else:
+        except KeyError:
             return 'X'
 
     @property
+    def friends(self):
+        return self.api.request(str(self.id) + '/friends')
+
+    @property
     def statuses(self):
-        statuses = self.api.statuses(self.id)
+        statuses = self.api.request(str(self.id) + '/statuses')
         output = []
         for status in statuses:
             output.append(self.summarize_status(status))
         return output
-
-    @property
-    def friends(self):
-        fb_friends = self.api.friends(self.id)
-        friends = []
-        for fb_friend in fb_friends:
-            friend = User(fb_friend['id'], self.access_token)
-            friends.append(friend)
-        return friends
 
     def summarize_status(self, status):
         output = {
@@ -312,14 +275,8 @@ class User:
             output['message'] = status['message']
         if 'updated_time' in status:
             date = status['updated_time']
-            new_date = date[:19] # Only the 19 first characters will be used
+            new_date = date[:19]  # Only the 19 first characters will be used
             output['date'] = datetime.datetime.strptime(new_date, "%Y-%m-%dT%H:%M:%S")
         if 'place' in status:
             output['place'] = status['place']
         return output
-
-    def place_name(self, place):
-        if 'name' in place:
-            return place['name']
-        else:
-            return ''

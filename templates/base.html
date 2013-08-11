@@ -1,0 +1,38 @@
+<html>
+
+    {# Page Title #}
+    <title>{% block title %}Jef Vlamings{% endblock %}</title>
+
+    <head>
+
+        {# Static files #}
+        {% load staticfiles %}
+
+        {# Stylesheets #}
+        <link href="{% static "css/bootstrap.css" %}" rel="stylesheet" type="text/css" />
+        <link href="{% static "css/style.less" %}" rel="stylesheet" type="text/css" />
+
+        {# Javascript #}
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script src="{% static "js/bootstrap.js" %}"></script>
+
+    </head>
+
+    <body>
+
+        {# Header #}
+        <header>
+            <div class="navbar">
+                <a href="#" class="navbar-brand">Falcon</a>
+            </div>
+        </header>
+
+        {# Content #}
+        <div id="content">
+            {% block content %}
+            {% endblock content %}
+        </div>
+
+    </body>
+
+</html>

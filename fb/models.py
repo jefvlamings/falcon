@@ -37,6 +37,7 @@ class Person(models.Model):
     birthday = models.DateField(null=True, blank=True)
     relationship_status = models.CharField(max_length=1, choices=RELATIONSHIP_CHOICES)
     significant_other = models.BigIntegerField(max_length=30, null=True, blank=True)
+    progress = models.FloatField(null=True, blank=True)
 
     def add_relationship(self, person):
         relationship, created = Relationship.objects.get_or_create(from_person=person, to_person=self)
@@ -102,6 +103,6 @@ class Location(models.Model):
 
     person = models.ForeignKey('Person')
     name = models.TextField(null=True, blank=True)
-    latitude = models.CharField(max_length=30, null=True, blank=True)
-    longitude = models.CharField(max_length=30, null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     type = models.CharField(max_length=1, choices=LOCATION_TYPES)
