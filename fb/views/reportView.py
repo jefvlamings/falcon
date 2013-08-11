@@ -1,7 +1,7 @@
 from django.views.generic.base import View
 from django.shortcuts import render
 from django.http import HttpResponseNotFound
-from models import Person
+from fb.models import Person
 import datetime
 
 

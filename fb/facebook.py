@@ -269,7 +269,7 @@ class User:
             if processed is None:
                 continue
             else:
-                locations += self.process_location(fb_location)
+                locations.append(self.process_location(fb_location))
         return locations
 
     def process_location(self, fb_location):

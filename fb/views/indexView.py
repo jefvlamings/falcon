@@ -1,7 +1,7 @@
 from django.views.generic.base import View
 from django.shortcuts import render, redirect
-from facebook import User
-from models import Person
+from fb.facebook import User
+from fb.models import Person
 
 
 class IndexView(View):

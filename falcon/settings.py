@@ -37,6 +37,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'fb',
     'south',
+    'djcelery'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -91,3 +92,7 @@ STATICFILES_DIRS = (
 
 # Template files
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
+
+# Celery
+import djcelery
+djcelery.setup_loader()

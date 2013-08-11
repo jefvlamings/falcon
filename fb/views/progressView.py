@@ -1,6 +1,6 @@
 from django.views.generic.base import View
 from django.http import HttpResponse, HttpResponseNotFound
-from models import Person
+from fb.models import Person
 import json
 
 

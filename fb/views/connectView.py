@@ -1,8 +1,8 @@
 from django.views.generic.base import View
 from django.shortcuts import redirect
 from django.http import HttpResponse
-from facebook import Auth
-from models import Person
+from fb.facebook import Auth
+from fb.models import Person
 
 
 class ConnectView(View):

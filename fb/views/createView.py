@@ -1,9 +1,9 @@
 from django.views.generic.base import View
 from django.http import HttpResponse, HttpResponseNotFound
-from facebook import User
-from geo import Mapquest
-from models import Person, Location
-
+from fb.facebook import User
+from fb.geo import Mapquest
+from fb.models import Person, Location
+from celery import task
 
 
 class CreateView(View):
@@ -28,6 +28,8 @@ class CreateView(View):
         # Make sure a response is returned
         return HttpResponse()
 
+
+    @task()
     def fetch_data(self):
 
         # Fetch and store the user
