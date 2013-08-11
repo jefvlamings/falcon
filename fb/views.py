@@ -109,7 +109,7 @@ class CreateView(View):
         user = User(self.person.fb_id, self.person.access_token)
         self.store_user(user)
 
-        # # Fetch and store its friends
+        # Fetch and store its friends
         friends_processed = 0
         for fb_friend in user.friends:
             friend = User(fb_friend['id'], self.person.access_token)
@@ -140,6 +140,9 @@ class CreateView(View):
         person.relationship_status = fb_user.relationship_status
         person.save()
 
+        if person.fb_id == self.person.fb_id:
+            self.person = person
+
         # Store hometown
         if fb_user.home_town is not None:
             try:
@@ -148,6 +151,18 @@ class CreateView(View):
                 location = Location.objects.create(person_id=person.id, type='H')
             location.name = fb_user.home_town
             location.save()
+
+        # Store locations
+        if fb_user.locations is not None:
+            for fb_location in fb_user.locations:
+                try:
+                    location = Location.objects.get(person_id=person.id, type='P', name=fb_location['name'])
+                except Location.DoesNotExist:
+                    location = Location.objects.create(person_id=person.id, type='P')
+                location.name = fb_location['name']
+                location.latitude = fb_location['latitude']
+                location.longitude = fb_location['longitude']
+                location.save()
 
     def fetch_coordinates(self):
 
@@ -228,9 +243,10 @@ class ReportView(View):
                 'report.html',
                 {
                     'person': self.person,
-                    'youngest_friends': self.person.friends().order_by('birthday').reverse()[:5],
-                    'oldest_friends': self.person.friends().exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5],
-                    'nearest_hometowns': self.person.nearest_hometowns()[:5],
-                    'furthest_hometowns': self.person.nearest_hometowns()[::-1][:5],
+                    'youngest_friends': self.person.friends.order_by('birthday').reverse()[:5],
+                    'oldest_friends': self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5],
+                    'nearest_hometowns': self.person.friends_hometowns[:5],
+                    'furthest_hometowns': self.person.friends_hometowns[::-1][:5],
+                    'furthest_travelers': self.person.furthest_travelers[::-1][:5],
                 }
             )

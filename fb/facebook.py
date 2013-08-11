@@ -2,6 +2,7 @@ import requests
 import datetime
 import urlparse
 from models import Person
+import json
 
 # Constants
 APP_ID = '160902533967876'
@@ -117,9 +118,12 @@ class Api:
         else:
             return False
 
-    def call(self, request):
-        url = 'https://graph.facebook.com/' + str(request) + \
-              '?access_token=' + str(self.access_token)
+    def call(self, request, literal=False):
+        if literal is True:
+            url = request
+        else:
+            url = 'https://graph.facebook.com/' + str(request) + \
+                  '?access_token=' + str(self.access_token)
         response = requests.get(url).json()
         if 'error' in response:
             error = response['error']
@@ -132,9 +136,9 @@ class Api:
         response = self.call(request)
         if 'data' in response:
             data = response['data']
-            # while self.more_data(response):
-            #     next = response['paging']['next']
-            #     data += self.request(next)
+            while self.more_data(response):
+                response = self.call(response['paging']['next'], True)
+                data += response['data']
             return data
         else:
             return response
@@ -257,11 +261,33 @@ class User:
         return self.api.request(str(self.id) + '/friends')
 
     @property
+    def locations(self):
+        locations = []
+        fb_locations = self.api.request(str(self.id) + '/locations')
+        for fb_location in fb_locations:
+            processed = self.process_location(fb_location)
+            if processed is None:
+                continue
+            else:
+                locations += self.process_location(fb_location)
+        return locations
+
+    def process_location(self, fb_location):
+        location = {}
+        try:
+            location['name'] = fb_location['place']['name']
+            location['latitude'] = fb_location['place']['location']['latitude']
+            location['longitude'] = fb_location['place']['location']['longitude']
+        except (KeyError, TypeError):
+            return None
+        return location
+
+    @property
     def statuses(self):
         statuses = self.api.request(str(self.id) + '/statuses')
         output = []
         for status in statuses:
-            output.append(self.summarize_status(status))
+            output += self.summarize_status(status)
         return output
 
     def summarize_status(self, status):
