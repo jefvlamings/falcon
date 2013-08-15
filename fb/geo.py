@@ -34,7 +34,7 @@ class Mapquest:
         try:
             status_code = response['info']['statuscode']
             if status_code is not 0:
-                raise Exception('MapQuest status: ' + self.status_message(status_code))
+                raise Exception('MapQuest status: ' + response['info']['messages'][0])
                 return None
         except IndexError:
             return None
@@ -57,16 +57,3 @@ class Mapquest:
 
         response = self.request(request_string)
         return response
-
-    def status_message(self, code):
-        messages = {
-            0: 'A successful geocode call.',
-            400: 'Error with input - The error message will start with: "Illegal argument from request:" '
-                 'followed by the specific error condition.',
-            403: 'Key related error - The error message will attempt to explain why there was an error with the '
-                 'key and should provide a link to the Developer Network.',
-            500: 'Unknown error - The error message will start with: "Error processing request:" followed by the '
-                 'message from the exception.',
-            606: 'Exceeded maximum number of locations. (Max=100, Actual=149)'
-        }
-        return messages[code]

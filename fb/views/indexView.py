@@ -1,6 +1,5 @@
 from django.views.generic.base import View
 from django.shortcuts import render, redirect
-from fb.facebook import User
 from fb.models import Person
 
 
@@ -18,17 +17,13 @@ class IndexView(View):
             return redirect('/connect')
 
         # Check if the access token has been set
-        if person.access_token is not None:
-
-            # Show some basic user info
-            user = User(person.fb_id, person.access_token)
-            return render(
-                request,
-                'index.html',
-                {
-                    'user': user,
-                    'person': person
-                }
-            )
-        else:
+        if person.access_token is None:
             return redirect('/connect')
+
+        return render(
+            request,
+            'index.html',
+            {
+                'person': person
+            }
+        )

@@ -1,8 +1,9 @@
 from django.views.generic.base import View
 from django.shortcuts import redirect
 from django.http import HttpResponse
-from fb.facebook import Auth
+from fb.facebook import Auth, Api
 from fb.models import Person
+from fb.storage import Store
 
 
 class ConnectView(View):
@@ -13,7 +14,6 @@ class ConnectView(View):
         If an access_code has been given, we should make a request to get the access_token from it. If no access_code
         was given, we should first ask for one
         """
-
         auth = Auth()
 
         # Check if a code had been provided in the request
@@ -34,6 +34,12 @@ class ConnectView(View):
                 # Store the access_token in the Person db
                 person.access_token = access_token
                 person.save()
+
+                # Store user information
+                api = Api(person.access_token)
+                fb_user = api.request(person.fb_id)
+                store = Store()
+                person = store.user(fb_user, person)
 
                 # Redirect the user to notify if all went well
                 return redirect('/facebook/' + str(person.pk))
