@@ -4,46 +4,47 @@ from models import Person, Location
 
 class Store():
 
-    def location(self, fb_location):
-        fb_id = fb_location['id']
-        location = self.process_location(fb_location['data'])
+    def location(self, response, person):
+        fb_location = self.process_location(response)
+        if fb_location is None:
+            return
+
         try:
-            location = Location.objects.get(fb_id=fb_id.id, type='P', name=location['name'])
+            location = Location.objects.get(person_id=person.id, type='P', name=fb_location['name'])
         except Location.DoesNotExist:
-            location = Location.objects.create(fb_id=fb_id.id, type='P')
-        location.name = location['name']
-        location.latitude = location['latitude']
-        location.longitude = location['longitude']
+            location = Location.objects.create(person_id=person.id, type='P')
+        location.name = fb_location['name']
+        location.latitude = fb_location['latitude']
+        location.longitude = fb_location['longitude']
         location.save()
 
-    def process_location(self, fb_location):
+    def process_location(self, data):
         location = {}
         try:
-            location['name'] = fb_location['place']['name']
-            location['latitude'] = fb_location['place']['location']['latitude']
-            location['longitude'] = fb_location['place']['location']['longitude']
+            location['name'] = data['place']['name']
+            location['latitude'] = data['place']['location']['latitude']
+            location['longitude'] = data['place']['location']['longitude']
         except (KeyError, TypeError):
             return None
         return location
 
-    def status(self, fb_status):
+    def proces_status(self, data):
         status = {}
         try:
-            status['name'] = fb_status['message']
+            status['name'] = data['message']
             status['date'] = datetime.datetime.strptime(status['updated_time'][:19], "%Y-%m-%dT%H:%M:%S")
-            status['date'] = fb_status['updated_time']
-            status['place'] = fb_status['place']
+            status['date'] = data['updated_time']
+            status['place'] = data['place']
         except (KeyError, TypeError):
             return None
         return status
 
-    def user(self, fb_user, friend):
-        user_id = fb_user['id']
-        user = self.process_user(fb_user['data'])
+    def user(self, response, friend):
+        user = self.process_user(response['data'])
         try:
-            person = Person.objects.get(fb_id=user_id)
+            person = Person.objects.get(fb_id=response['id'])
         except Person.DoesNotExist:
-            person = Person.objects.create(fb_id=user_id)
+            person = Person.objects.create(fb_id=response['id'])
         person.add_relationship(friend)
         person.first_name = user['first_name']
         person.middle_name = user['middle_name']
@@ -67,17 +68,17 @@ class Store():
         location.name = hometown
         location.save()
 
-    def process_user(self, fb_user):
+    def process_user(self, data):
         user = {}
-        user['first_name'] = fb_user.get('first_name', '')
-        user['middle_name'] = fb_user.get('middle_name', '')
-        user['last_name'] = fb_user.get('last_name', '')
-        user['gender'] = self.string_to_gender(fb_user.get('gender', None))
-        user['birthday'] = self.string_to_date(fb_user.get('birthday', None))
-        significant_other = fb_user.get('significant_other', {})
+        user['first_name'] = data.get('first_name', '')
+        user['middle_name'] = data.get('middle_name', '')
+        user['last_name'] = data.get('last_name', '')
+        user['gender'] = self.string_to_gender(data.get('gender', None))
+        user['birthday'] = self.string_to_date(data.get('birthday', None))
+        significant_other = data.get('significant_other', {})
         user['significant_other'] = significant_other.get('id', None)
-        user['relationship_status'] = self.string_to_relationship_status(fb_user.get('relationship_status', ''))
-        hometown = fb_user.get('hometown', {})
+        user['relationship_status'] = self.string_to_relationship_status(data.get('relationship_status', ''))
+        hometown = data.get('hometown', {})
         user['hometown'] = hometown.get('name', None)
         return user
 

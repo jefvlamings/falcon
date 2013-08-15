@@ -10,7 +10,6 @@ class CreateView(View):
 
     person = None
     progress = 0
-    api = None
 
     def get(self, request, id):
 
@@ -23,7 +22,6 @@ class CreateView(View):
         # Only start fetching data if an access_token has been set
         if person.access_token is not None:
             self.person = person
-            self.api = Api(self.person.access_token)
             self.fetch_data()
         else:
             return HttpResponseNotFound
@@ -51,7 +49,8 @@ class CreateView(View):
             'id': self.person.fb_id,
             'request': str(self.person.fb_id) + '/friends'
         }
-        responses = self.api.request([request])
+        api = Api(self.person.access_token)
+        responses = api.request([request])
         for response in responses:
             for friend in response['data']:
                 try:
@@ -73,7 +72,6 @@ class CreateView(View):
         responses = api.request(requests)
         for response in responses:
             store = Store()
-            print response
             store.user(response, self.person)
 
     def fetch_locations(self):
@@ -87,8 +85,13 @@ class CreateView(View):
         api = Api(self.person.access_token)
         responses = api.request(requests)
         for response in responses:
-            store = Store()
-            store.location(response)
+            try:
+                person = Person.objects.get(fb_id=response['id'])
+            except Person.DoesNotExist:
+                continue
+            for location in response['data']:
+                store = Store()
+                store.location(location, person)
 
     def fetch_coordinates(self):
 
@@ -112,13 +115,13 @@ class CreateView(View):
             # Get all locations from the db that have the same name as the current location name
             try:
                 locations = Location.objects.filter(name=geo_entry['providedLocation']['location'])
-            except Location.DoesNotExist:
+            except (Location.DoesNotExist, KeyError):
                 continue
 
             # Check if Mapquest provided coordinates for this name
             try:
                 coordinates = geo_entry['locations'][0]['latLng']
-            except IndexError:
+            except (IndexError, KeyError):
                 continue
 
             # Set the coordinates and save the location

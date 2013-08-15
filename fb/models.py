@@ -26,7 +26,7 @@ class Person(models.Model):
         ('X', 'Unknown'),
     )
 
-    fb_id = models.BigIntegerField(max_length=30, null=True, blank=True)
+    fb_id = models.CharField(max_length=30, null=True, blank=True)
     relationships = models.ManyToManyField('self', through='Relationship', symmetrical=False, related_name='related_to+')
     access_token = models.CharField(max_length=30)
     hash = models.CharField(max_length=30)
@@ -36,7 +36,7 @@ class Person(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     birthday = models.DateField(null=True, blank=True)
     relationship_status = models.CharField(max_length=1, choices=RELATIONSHIP_CHOICES)
-    significant_other = models.BigIntegerField(max_length=30, null=True, blank=True)
+    significant_other = models.CharField(max_length=30, null=True, blank=True)
     progress = models.FloatField(null=True, blank=True)
 
     @property

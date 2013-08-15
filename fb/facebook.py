@@ -156,37 +156,46 @@ class Api:
         responses = []
         i = 0
         for response in batch_response:
-            code = response['code']
-            body = json.loads(response['body'])
-            if code is not 200:
-                raise Exception('Facebook status: [' + str(code) + '] ' + body['error']['message'])
-            elif 'data' in body:
-                data = body['data']
-                self.queue_paged_request(body)
+            if self.validate_response(response) is False:
+                data = {}
             else:
-                data = body
-            response = {
+                body = json.loads(response['body'])
+                if 'data' in body:
+                    data = body['data']
+                    self.queue_paged_request(body)
+                else:
+                    data = body
+            responses.append({
                 'id': self.current_batch[i]['id'],
                 'request': self.current_batch[i]['request'],
                 'data': data
-            }
-            responses.append(response)
+            })
             i += 1
         return responses
+
+    def validate_response(self, response):
+        if not isinstance(response, dict):
+            return False
+        elif response['code'] is not 200:
+            body = json.loads(response['body'])
+            raise Exception('Facebook status: [' + str(response['code']) + '] ' + body['error']['message'])
+            return False
+        else:
+            return True
 
     def queue_paged_request(self, response):
         if self.more_data(response):
             request_url = response['paging']['next']
             parsed_url = self.parse_request_url(request_url)
             request = {
-                'id': parsed_url['id'],
-                'request': parsed_url['request']
+                'id': str(parsed_url['id']),
+                'request': str(parsed_url['request'])
             }
             self.paged_requests.append(request)
 
     def parse_request_url(self, request_url):
         parsed = urlparse.urlparse(request_url)
-        path = parsed.path
+        path = parsed.path[1:]
         path_elements = path.split('/')
         return {
             'id': path_elements[0],
@@ -198,10 +207,10 @@ class Api:
         for request in batch:
             if request_string is not '?batch=[':
                 request_string += ','
-            request_string += '{"method":"GET", "relative_url":"' + request['request'] + '"}'
+            request_string += '{"method":"GET", "relative_url":"' + str(request['request']) + '"}'
         request_string += ']'
         url = 'https://graph.facebook.com/' + \
-              request_string + \
+              str(request_string) + \
               '&access_token=' + str(self.access_token) + \
               '&method=post'
         return url
