@@ -8,6 +8,9 @@ from fb.storage import Store
 
 class ConnectView(View):
 
+    person = None
+    access_token = None
+
     def get(self, request, *args, **kwargs):
 
         """
@@ -23,26 +26,12 @@ class ConnectView(View):
             code = request.GET['code']
             access_token = auth.get_access_token(code)
             if auth.validate_access_token(access_token) is True:
-                user_id = auth.get_user_id(access_token)
-
-                # First check if a Person already exists for this facebook user id
-                try:
-                    person = Person.objects.get(fb_id=user_id)
-                except Person.DoesNotExist:
-                    person = Person.objects.create(fb_id=user_id)
-
-                # Store the access_token in the Person db
-                person.access_token = access_token
-                person.save()
-
-                # Store user information
-                api = Api(person.access_token)
-                fb_user = api.request(person.fb_id)
-                store = Store()
-                person = store.user(fb_user, person)
+                fb_id = auth.get_user_id(access_token)
+                self.access_token = access_token
+                self.create_person(fb_id)
 
                 # Redirect the user to notify if all went well
-                return redirect('/facebook/' + str(person.pk))
+                return redirect('/facebook/' + str(self.person.pk))
 
             # Something went wrong message
             else:
@@ -52,3 +41,23 @@ class ConnectView(View):
         else:
             url = auth.get_access_url()
             return redirect(url)
+
+    def create_person(self, fb_id):
+        try:
+            self.person = Person.objects.get(fb_id=fb_id)
+        except Person.DoesNotExist:
+            self.person = Person.objects.create(fb_id=fb_id)
+        self.person.access_token = self.access_token
+        self.person.save()
+        self.fetch_data(fb_id)
+
+    def fetch_data(self, fb_id):
+        api = Api(self.person.access_token)
+        request = {
+            'id': self.person.fb_id,
+            'request': str(self.person.fb_id)
+        }
+        responses = api.request([request])
+        for response in responses:
+            store = Store()
+            self.person = store.user(response, self.person)

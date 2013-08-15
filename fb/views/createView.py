@@ -47,15 +47,19 @@ class CreateView(View):
         self.update_progress(100)
 
     def fetch_friend_list(self):
-        fb_friends = self.api.request(str(self.person.fb_id) + '/friends')
-        for fb_friend in fb_friends:
-            try:
-                person = Person.objects.get(fb_id=fb_friend['id'])
-            except Person.DoesNotExist:
-                person = Person.objects.create(fb_id=fb_friend['id'])
-            person.add_relationship(self.person)
-            person.save()
-        self.person.save()
+        request = {
+            'id': self.person.fb_id,
+            'request': str(self.person.fb_id) + '/friends'
+        }
+        responses = self.api.request([request])
+        for response in responses:
+            for friend in response['data']:
+                try:
+                    person = Person.objects.get(fb_id=friend['id'])
+                except Person.DoesNotExist:
+                    person = Person.objects.create(fb_id=friend['id'])
+                person.add_relationship(self.person)
+                person.save()
 
     def fetch_user_data(self):
         requests = []
@@ -65,9 +69,11 @@ class CreateView(View):
                 'id': friend.fb_id,
                 'request': str(friend.fb_id)
             })
-        responses = self.api.mass_request(requests)
+        api = Api(self.person.access_token)
+        responses = api.request(requests)
         for response in responses:
             store = Store()
+            print response
             store.user(response, self.person)
 
     def fetch_locations(self):
@@ -78,7 +84,8 @@ class CreateView(View):
                 'id': friend.fb_id,
                 'request': str(friend.fb_id) + '/locations'
             })
-        responses = self.api.mass_request(requests)
+        api = Api(self.person.access_token)
+        responses = api.request(requests)
         for response in responses:
             store = Store()
             store.location(response)

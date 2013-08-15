@@ -1,5 +1,5 @@
 import requests
-from urlparse import urlparse
+import urlparse
 from models import Person
 import json
 
@@ -124,23 +124,7 @@ class Api:
         response = requests.get(url).json()
         return response
 
-    def request(self, request):
-        url = 'https://graph.facebook.com/' + str(request) + '?access_token=' + str(self.access_token)
-        response = self.call(url)
-        if 'error' in response:
-            error = response['error']
-            raise Exception('Facebook status: [' + str(error['code']) + '] ' + error['message'])
-            return None
-        elif 'data' in response:
-            data = response['data']
-            while self.more_data(response):
-                response = self.call(response['paging']['next'])
-                data += response['data']
-            return data
-        else:
-            return response
-
-    def mass_request(self, requests):
+    def request(self, requests):
         responses = []
         self.queued_requests = requests
         while len(self.queued_requests) > 0:
@@ -164,6 +148,7 @@ class Api:
         else:
             batch += self.queued_requests
             self.queued_requests = []
+        self.paged_requests = []
         self.current_batch = batch
         return batch
 
@@ -200,7 +185,7 @@ class Api:
             self.paged_requests.append(request)
 
     def parse_request_url(self, request_url):
-        parsed = urlparse(request_url)
+        parsed = urlparse.urlparse(request_url)
         path = parsed.path
         path_elements = path.split('/')
         return {
