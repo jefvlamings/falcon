@@ -103,7 +103,6 @@ class Api:
     access_token = ''
     current_batch = []
     queued_requests = []
-    paged_requests = []
     batch_size = 50
 
     def __init__(self, access_token):
@@ -140,16 +139,16 @@ class Api:
 
     def create_batch(self):
         batch = []
-        batch += self.paged_requests
-        batch_space_available = self.batch_size - len(self.paged_requests)
-        if len(self.queued_requests) > batch_space_available:
-            batch += self.queued_requests[-batch_space_available:]
-            del self.queued_requests[-batch_space_available:]
+        print 'queued requests: ' + str(len(self.queued_requests))
+        if len(self.queued_requests) > self.batch_size:
+            batch += self.queued_requests[-self.batch_size:]
+            del self.queued_requests[-self.batch_size:]
         else:
             batch += self.queued_requests
             self.queued_requests = []
-        self.paged_requests = []
         self.current_batch = batch
+        print 'batch size: ' + str(len(batch))
+        print '----------'
         return batch
 
     def process_batch_response(self, batch_response):
@@ -162,7 +161,8 @@ class Api:
                 body = json.loads(response['body'])
                 if 'data' in body:
                     data = body['data']
-                    self.queue_paged_request(body)
+                    # if self.more_data(body):
+                    #     self.queue_paged_request(body)
                 else:
                     data = body
             responses.append({
@@ -184,14 +184,17 @@ class Api:
             return True
 
     def queue_paged_request(self, response):
-        if self.more_data(response):
-            request_url = response['paging']['next']
-            parsed_url = self.parse_request_url(request_url)
-            request = {
-                'id': str(parsed_url['id']),
-                'request': str(parsed_url['request'])
-            }
-            self.paged_requests.append(request)
+        request_url = response['paging']['next']
+        parsed_url = self.parse_request_url(request_url)
+        request = {
+            'id': str(parsed_url['id']),
+            'request': str(parsed_url['request'])
+        }
+        if request in self.queued_requests:
+            print 'exists!'
+        else:
+            print response['paging']['next']
+            self.queued_requests.append(request)
 
     def parse_request_url(self, request_url):
         parsed = urlparse.urlparse(request_url)

@@ -80,10 +80,11 @@ class CreateView(View):
         for friend in friends:
             requests.append({
                 'id': friend.fb_id,
-                'request': str(friend.fb_id) + '/locations'
+                'request': str(friend.fb_id) + '/locations?limit=500'
             })
         api = Api(self.person.access_token)
         responses = api.request(requests)
+        print 'responses: ' + str(len(responses))
         for response in responses:
             try:
                 person = Person.objects.get(fb_id=response['id'])
