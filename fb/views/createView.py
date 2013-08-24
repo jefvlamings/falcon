@@ -4,6 +4,7 @@ from fb.facebook import Api
 from fb.geo import Mapquest
 from fb.models import Person, Location
 from fb.storage import Store
+import fb.geo
 
 
 class CreateView(View):
@@ -42,6 +43,8 @@ class CreateView(View):
         self.fetch_locations()
         self.update_progress(75)
         self.fetch_coordinates()
+        self.update_progress(85)
+        self.store_distances()
         self.update_progress(100)
 
     def fetch_friend_list(self):
@@ -130,3 +133,45 @@ class CreateView(View):
                 location.latitude = coordinates['lat']
                 location.longitude = coordinates['lng']
                 location.save()
+
+    def store_distances(self):
+        self.store_distances_between_hometowns()
+        self.store_distances_from_hometowns()
+
+    def store_distances_between_hometowns(self):
+
+        # Get all hometown locations for which no distance has been set
+        locations = Location.objects.filter(hometown_distance__isnull=True, type='H')
+
+        for location in locations:
+
+            distance = fb.geo.distance(
+                location.longitude,
+                location.latitude,
+                self.person.hometown.longitude,
+                self.person.hometown.latitude
+            )
+
+            location.hometown_distance = distance
+            location.save()
+
+    def store_distances_from_hometowns(self):
+
+        # Get all locations for which no distance has been set and which are not hometowns
+        locations = Location.objects.filter(travel_distance__isnull=True, type='P')
+
+        for location in locations:
+            try:
+                hometown = Location.objects.get(type='H', person_id=location.person_id)
+            except Location.DoesNotExist:
+                continue
+
+            distance = fb.geo.distance(location.longitude, location.latitude, hometown.longitude, hometown.latitude)
+
+            location.travel_distance = distance
+            location.save()
+
+
+
+
+

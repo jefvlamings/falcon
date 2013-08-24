@@ -17,8 +17,8 @@
     <ol>
     {% for friend in youngest_friends %}
         <li>
-            <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
-            {{ friend.first_name }} {{ friend.last_name }} ({{ friend.birthday }})
+            <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" width="30">
+            {{ friend.first_name }} {{ friend.last_name }} ({{ friend.age }} years)
         </li>
     {% endfor %}
     </ol>
@@ -27,8 +27,8 @@
     <ol>
     {% for friend in oldest_friends %}
         <li>
-            <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" alt="{{ friend.first_name }} {{ friend.last_name }}">
-            {{ friend.first_name }} {{ friend.last_name }} ({{ friend.birthday }})
+            <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" width="30">
+            {{ friend.first_name }} {{ friend.last_name }} ({{ friend.age }} years)
         </li>
     {% endfor %}
     </ol>
@@ -37,8 +37,8 @@
     <ol>
     {% for hometown in nearest_hometowns %}
         <li>
-            <img src="https://graph.facebook.com/{{ hometown.person.fb_id }}/picture" alt="{{ hometown.location.name }}">
-            {{ hometown.person.first_name }} {{ hometown.person.last_name }} ({{ hometown.distance|floatformat:0 }} km)
+            <img src="https://graph.facebook.com/{{ hometown.person.fb_id }}/picture" width="30">
+            {{ hometown.person.first_name }} {{ hometown.person.last_name }} - {{ hometown.location.name }} ({{ hometown.location.hometown_distance|floatformat:0 }} km)
         </li>
     {% endfor %}
     </ol>
@@ -47,8 +47,8 @@
     <ol>
     {% for hometown in furthest_hometowns %}
         <li>
-            <img src="https://graph.facebook.com/{{ hometown.person.fb_id }}/picture" alt="{{ hometown.location.name }}">
-            {{ hometown.person.first_name }} {{ hometown.person.last_name }} ({{ hometown.distance|floatformat:0 }} km)
+            <img src="https://graph.facebook.com/{{ hometown.person.fb_id }}/picture" width="30">
+            {{ hometown.person.first_name }} {{ hometown.person.last_name }} - {{ hometown.location.name }} ({{ hometown.location.hometown_distance|floatformat:0 }} km)
         </li>
     {% endfor %}
     </ol>
@@ -57,8 +57,8 @@
     <ol>
     {% for travel in furthest_travelers %}
         <li>
-            <img src="https://graph.facebook.com/{{ travel.person.fb_id }}/picture" alt="{{ travel.location.name }}">
-            {{ travel.person.first_name }} {{ travel.person.last_name }} ({{ travel.distance|floatformat:0 }} km)
+            <img src="https://graph.facebook.com/{{ travel.person.fb_id }}/picture" width="30">
+            {{ travel.person.first_name }} {{ travel.person.last_name }} - {{ travel.location.name }} ({{ travel.location.travel_distance|floatformat:0 }} km)
         </li>
     {% endfor %}
     </ol>
