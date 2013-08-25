@@ -35,7 +35,7 @@ var Report = function() {
             position: new google.maps.LatLng(data.latitude,data.longitude),
             map: self.map,
             icon: "https://graph.facebook.com/" + data.person.fbid + "/picture?width=30&height=30",
-            title: data.location
+            title: data.location + " (" + data.person.name + ")"
         });
         self.markers.push(marker);
     };
@@ -75,7 +75,7 @@ $(document).ready(function() {
 
     var report = new Report()
     report.createMap();
-    report.updateMap('top-travel-friends');
+    report.updateMap('top-travels');
 
     $("#report-locations-buttons button").on("click", function() {
         var dataUrl = $(this).attr('data-url');

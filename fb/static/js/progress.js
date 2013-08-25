@@ -1,4 +1,7 @@
 $(document).ready(function() {
+
+    var title = document.title;
+
     var updateProgress = function() {
         $.ajax({
             type: "GET",
@@ -10,6 +13,7 @@ $(document).ready(function() {
             }
             $('#progress').html(json + '%');
             $('#progress-bar').width(json + '%');
+            document.title = title + ' (' +json + '%)';
         });
     }
     var interval = window.setInterval(updateProgress, 500);

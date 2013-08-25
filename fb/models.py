@@ -40,6 +40,10 @@ class Person(models.Model):
     progress = models.FloatField(null=True, blank=True)
 
     @property
+    def name(self):
+        return self.first_name + ' ' + self.last_name
+
+    @property
     def friends(self):
         return self.relationships.all()
 
@@ -114,6 +118,9 @@ class Location(models.Model):
     name = models.TextField(null=True, blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+    postal_code = models.CharField(max_length=255, null=True, blank=True)
+    city = models.CharField(max_length=255, null=True, blank=True)
+    country = models.CharField(max_length=255, null=True, blank=True)
     travel_distance = models.FloatField(null=True, blank=True)
     hometown_distance = models.FloatField(null=True, blank=True)
     type = models.CharField(max_length=1, choices=LOCATION_TYPES)

@@ -11,6 +11,7 @@ class CreateView(View):
 
     person = None
     progress = 0
+    number_of_requests = 0
 
     def get(self, request, id):
 
@@ -30,20 +31,14 @@ class CreateView(View):
         # Make sure a response is returned
         return HttpResponse()
 
-    def update_progress(self, level):
-        self.person.progress = level
-        self.person.save()
-
     def fetch_data(self):
         self.update_progress(0)
         self.fetch_friend_list()
-        self.update_progress(25)
+        self.update_progress(10)
         self.fetch_user_data()
-        self.update_progress(50)
         self.fetch_locations()
-        self.update_progress(75)
-        self.fetch_coordinates()
-        self.update_progress(85)
+        self.fetch_geo_data()
+        self.update_progress(90)
         self.store_distances()
         self.update_progress(100)
 
@@ -52,16 +47,19 @@ class CreateView(View):
             'id': self.person.fb_id,
             'request': str(self.person.fb_id) + '/friends'
         }
+        number_of_requests = len(request)
         api = Api(self.person.access_token)
-        responses = api.request([request])
-        for response in responses:
-            for friend in response['data']:
-                try:
-                    person = Person.objects.get(fb_id=friend['id'])
-                except Person.DoesNotExist:
-                    person = Person.objects.create(fb_id=friend['id'])
-                person.add_relationship(self.person)
-                person.save()
+        generator = api.request([request])
+        for responses in generator:
+            for response in responses:
+                for friend in response['data']:
+                    try:
+                        person = Person.objects.get(fb_id=friend['id'])
+                    except Person.DoesNotExist:
+                        person = Person.objects.create(fb_id=friend['id'])
+                    person.add_relationship(self.person)
+                    person.save()
+            self.update_progress_by_api(number_of_requests, len(api.queued_requests), 10, 20)
 
     def fetch_user_data(self):
         requests = []
@@ -71,11 +69,14 @@ class CreateView(View):
                 'id': friend.fb_id,
                 'request': str(friend.fb_id)
             })
+        number_of_requests = len(requests)
         api = Api(self.person.access_token)
-        responses = api.request(requests)
-        for response in responses:
-            store = Store()
-            store.user(response, self.person)
+        generator = api.request(requests)
+        for responses in generator:
+            for response in responses:
+                store = Store()
+                store.user(response, self.person)
+            self.update_progress_by_api(number_of_requests, len(api.queued_requests), 20, 40)
 
     def fetch_locations(self):
         requests = []
@@ -85,19 +86,21 @@ class CreateView(View):
                 'id': friend.fb_id,
                 'request': str(friend.fb_id) + '/locations?limit=500'
             })
+        number_of_requests = len(requests)
         api = Api(self.person.access_token)
-        responses = api.request(requests)
-        print 'responses: ' + str(len(responses))
-        for response in responses:
-            try:
-                person = Person.objects.get(fb_id=response['id'])
-            except Person.DoesNotExist:
-                continue
-            for location in response['data']:
-                store = Store()
-                store.location(location, person)
+        generator = api.request(requests)
+        for responses in generator:
+            for response in responses:
+                try:
+                    person = Person.objects.get(fb_id=response['id'])
+                except Person.DoesNotExist:
+                    continue
+                for location in response['data']:
+                    store = Store()
+                    store.location(location, person)
+            self.update_progress_by_api(number_of_requests, len(api.queued_requests), 40, 80)
 
-    def fetch_coordinates(self):
+    def fetch_geo_data(self):
 
         # Get all unique location names for which no latitude has been set
         locations = Location.objects.filter(latitude__isnull=True)
@@ -111,28 +114,8 @@ class CreateView(View):
         geo_data = mapquest.batch_request_names(locations_names_unique)
 
         # Process and store all geocoding data
-        self.store_coordinates(geo_data)
-
-    def store_coordinates(self, geo_data):
-        for geo_entry in geo_data:
-
-            # Get all locations from the db that have the same name as the current location name
-            try:
-                locations = Location.objects.filter(name=geo_entry['providedLocation']['location'])
-            except (Location.DoesNotExist, KeyError):
-                continue
-
-            # Check if Mapquest provided coordinates for this name
-            try:
-                coordinates = geo_entry['locations'][0]['latLng']
-            except (IndexError, KeyError):
-                continue
-
-            # Set the coordinates and save the location
-            for location in locations:
-                location.latitude = coordinates['lat']
-                location.longitude = coordinates['lng']
-                location.save()
+        store = Store()
+        store.geo_data(geo_data)
 
     def store_distances(self):
         self.store_distances_between_hometowns()
@@ -144,14 +127,12 @@ class CreateView(View):
         locations = Location.objects.filter(hometown_distance__isnull=True, type='H')
 
         for location in locations:
-
             distance = fb.geo.distance(
                 location.longitude,
                 location.latitude,
                 self.person.hometown.longitude,
                 self.person.hometown.latitude
             )
-
             location.hometown_distance = distance
             location.save()
 
@@ -165,13 +146,16 @@ class CreateView(View):
                 hometown = Location.objects.get(type='H', person_id=location.person_id)
             except Location.DoesNotExist:
                 continue
-
             distance = fb.geo.distance(location.longitude, location.latitude, hometown.longitude, hometown.latitude)
-
             location.travel_distance = distance
             location.save()
 
+    def update_progress(self, level):
+        self.person.progress = level
+        self.person.save()
 
-
-
-
+    def update_progress_by_api(self, requests, queue, start, stop):
+        progress_range = float(stop) - float(start)
+        progress = float(start) + (((float(requests) - float(queue)) / float(requests)) * float(progress_range))
+        self.person.progress = progress
+        self.person.save()

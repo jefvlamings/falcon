@@ -4,6 +4,30 @@ from models import Person, Location
 
 class Store():
 
+    def geo_data(self, geo_data):
+        for geo_entry in geo_data:
+
+            # Get all locations from the db that have the same name as the current location name
+            try:
+                locations = Location.objects.filter(name=geo_entry['providedLocation']['location'])
+                location_data = geo_entry['locations'][0]
+            except (Location.DoesNotExist, KeyError, IndexError):
+                continue
+
+            # Set the coordinates and save the location
+            for location in locations:
+                try:
+                    location.latitude = location_data['latLng']['lat']
+                    location.longitude = location_data['latLng']['lng']
+                    location.street = location_data['street']
+                    location.postal_code = location_data['postalCode']
+                    location.city = location_data['adminArea5']
+                    location.country = location_data['adminArea1']
+                except (IndexError, KeyError):
+                    continue
+                location.save()
+
+
     def location(self, response, person):
         fb_location = self.process_location(response)
         if fb_location is None:

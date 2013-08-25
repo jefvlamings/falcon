@@ -29,7 +29,8 @@ class Mapquest:
     def request(self, request):
         url = 'http://open.mapquestapi.com/geocoding/v1/batch' \
               '?key=' + self.SECRET_KEY + \
-              '&' + request
+              '&' + request + \
+              '&maxResults=1'
         response = requests.get(url).json()
         try:
             status_code = response['info']['statuscode']

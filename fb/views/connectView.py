@@ -57,7 +57,8 @@ class ConnectView(View):
             'id': self.person.fb_id,
             'request': str(self.person.fb_id)
         }
-        responses = api.request([request])
-        for response in responses:
-            store = Store()
-            self.person = store.user(response, self.person)
+        generator = api.request([request])
+        for responses in generator:
+            for response in responses:
+                store = Store()
+                self.person = store.user(response, self.person)

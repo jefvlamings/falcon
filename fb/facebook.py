@@ -124,13 +124,11 @@ class Api:
         return response
 
     def request(self, requests):
-        responses = []
         self.queued_requests = requests
         while len(self.queued_requests) > 0:
             batch = self.create_batch()
             batch_response = self.batch_request(batch)
-            responses += batch_response
-        return responses
+            yield batch_response
 
     def batch_request(self, batch):
         request_url = self.batch_to_request_url(batch)
