@@ -37,7 +37,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'fb',
     'south',
-    'djcelery'
+    'ajax'
 )
 
 MIDDLEWARE_CLASSES = (

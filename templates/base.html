@@ -13,8 +13,9 @@
         <link href="{% static "css/style.less" %}" rel="stylesheet" type="text/css" />
 
         {# Javascript #}
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-        <script src="{% static "js/bootstrap.js" %}"></script>
+        {% block js-head %}
+            <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        {% endblock js-head %}
 
     </head>
 
@@ -34,5 +35,10 @@
         </div>
 
     </body>
+
+    {# Javascript #}
+    {% block js-foot %}
+        <script src="{% static "js/bootstrap.js" %}"></script>
+    {% endblock js-foot %}
 
 </html>

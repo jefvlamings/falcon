@@ -36,9 +36,7 @@ class ReportView(View):
                     'person': self.person,
                     'youngest_friends': self.get_five_youngest_friends(),
                     'oldest_friends': self.get_five_oldest_friends(),
-                    'nearest_hometowns': self.get_five_nearest_hometowns(),
-                    'furthest_hometowns': self.get_five_furthest_hometowns(),
-                    'furthest_travelers': self.get_five_furthest_travel_friends(),
+                    # 'nearest_hometowns': self.get_five_nearest_hometowns(),
                 }
             )
 
@@ -63,32 +61,3 @@ class ReportView(View):
                 'location': hometown
             })
         return furthest_hometowns
-
-    def get_five_furthest_hometowns(self):
-        hometowns = self.person.friends_hometowns.distinct().order_by('hometown_distance')[::-1][:5]
-        furthest_hometowns = []
-        for hometown in hometowns:
-            try:
-                person = Person.objects.get(id=hometown.person_id)
-            except Person.DoesNotExist:
-                continue
-            furthest_hometowns.append({
-                'person': person,
-                'location': hometown
-            })
-        return furthest_hometowns
-
-    def get_five_furthest_travel_friends(self):
-        travels = Location.objects.filter(pk__in=Location.objects.order_by().values('person_id').annotate(max_id=Max('id')).values('max_id')).order_by('travel_distance')[::-1][:5]
-        top_travels = []
-        for travel in travels:
-            print travel.name
-            try:
-                person = Person.objects.get(id=travel.person_id)
-            except Person.DoesNotExist:
-                continue
-            top_travels.append({
-                'person': person,
-                'location': travel
-            })
-        return top_travels

@@ -11,5 +11,6 @@ urlpatterns = patterns(
     url(r'^progress/(\d+)/$', fbViews.ProgressView.as_view()),
     url(r'^facebook/(\d+)/$', fbViews.IndexView.as_view()),
     url(r'^facebook/$', fbViews.IndexView.as_view()),
+    url(r'^ajax/', include('ajax.urls')),
     url(r'^admin/', include(admin.site.urls))
 )

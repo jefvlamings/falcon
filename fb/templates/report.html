@@ -1,66 +1,69 @@
 {% extends "base.html" %}
+
 {% block content %}
 
     <h1>Report</h1>
 
-    <h3>Personal info</h3>
-    <img src="https://graph.facebook.com/{{ person.fb_id }}/picture?type=large" alt="{{ friend.first_name }} {{ friend.last_name }}">
-    <ul>
-        <li>First name: {{ person.first_name }}</li>
-        <li>Middle name: {{ person.middle_name }}</li>
-        <li>Last name: {{ person.last_name }}</li>
-        <li>Gender: {{ person.gender }}</li>
-        <li>Birthday: {{ person.birthday }}</li>
-    </ul>
+    <div class="row">
+        <div id="person" class="col-3" data-id="{{ person.id }}">
+            <h3>Personal info</h3>
+            <img src="https://graph.facebook.com/{{ person.fb_id }}/picture?type=large" alt="{{ friend.first_name }} {{ friend.last_name }}">
+            <ul>
+                <li>First name: {{ person.first_name }}</li>
+                <li>Middle name: {{ person.middle_name }}</li>
+                <li>Last name: {{ person.last_name }}</li>
+                <li>Gender: {{ person.gender }}</li>
+                <li>Birthday: {{ person.birthday }}</li>
+            </ul>
+        </div>
+        <div class="col-4 col-lg-offset-1">
+            <h3>Youngest</h3>
+            <ol>
+            {% for friend in youngest_friends %}
+                <li>
+                    <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" width="30">
+                    {{ friend.first_name }} {{ friend.last_name }} ({{ friend.age }} years)
+                </li>
+            {% endfor %}
+            </ol>
+        </div>
+        <div class="col-4">
+            <h3>Oldest</h3>
+            <ol>
+            {% for friend in oldest_friends %}
+                <li>
+                    <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" width="30">
+                    {{ friend.first_name }} {{ friend.last_name }} ({{ friend.age }} years)
+                </li>
+            {% endfor %}
+            </ol>
+        </div>
+    </div>
 
-    <h3>Youngest friends</h3>
-    <ol>
-    {% for friend in youngest_friends %}
-        <li>
-            <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" width="30">
-            {{ friend.first_name }} {{ friend.last_name }} ({{ friend.age }} years)
-        </li>
-    {% endfor %}
-    </ol>
+    {# Map #}
+    <div id="report-locations" class="row">
+        <h3>Locations</h3>
+        <div class="span12 text-center">
+            <div id="report-locations-buttons" class="btn-group">
+                <button data-url="furthest-friends" type="button" class="btn btn-default">Furthest hometowns</button>
+                <button data-url="top-travel-friends" type="button" class="btn btn-default active">Top travelers</button>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div id="map-canvas"></div>
+    </div>
 
-    <h3>Oldest friends</h3>
-    <ol>
-    {% for friend in oldest_friends %}
-        <li>
-            <img src="https://graph.facebook.com/{{ friend.fb_id }}/picture" width="30">
-            {{ friend.first_name }} {{ friend.last_name }} ({{ friend.age }} years)
-        </li>
-    {% endfor %}
-    </ol>
+    <div class="row">
+        <h3>test</h3>
+    </div>
 
-    <h3>Nearest friends</h3>
-    <ol>
-    {% for hometown in nearest_hometowns %}
-        <li>
-            <img src="https://graph.facebook.com/{{ hometown.person.fb_id }}/picture" width="30">
-            {{ hometown.person.first_name }} {{ hometown.person.last_name }} - {{ hometown.location.name }} ({{ hometown.location.hometown_distance|floatformat:0 }} km)
-        </li>
-    {% endfor %}
-    </ol>
+{% endblock %}
 
-    <h3>Furthest friends</h3>
-    <ol>
-    {% for hometown in furthest_hometowns %}
-        <li>
-            <img src="https://graph.facebook.com/{{ hometown.person.fb_id }}/picture" width="30">
-            {{ hometown.person.first_name }} {{ hometown.person.last_name }} - {{ hometown.location.name }} ({{ hometown.location.hometown_distance|floatformat:0 }} km)
-        </li>
-    {% endfor %}
-    </ol>
-
-    <h3>Top travelers</h3>
-    <ol>
-    {% for travel in furthest_travelers %}
-        <li>
-            <img src="https://graph.facebook.com/{{ travel.person.fb_id }}/picture" width="30">
-            {{ travel.person.first_name }} {{ travel.person.last_name }} - {{ travel.location.name }} ({{ travel.location.travel_distance|floatformat:0 }} km)
-        </li>
-    {% endfor %}
-    </ol>
-
+{# Javascript files #}
+{% block js-foot %}
+    {{ block.super }}
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    {% load staticfiles %}
+    <script src="{% static "js/report.js" %}"></script>
 {% endblock %}
