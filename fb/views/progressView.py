@@ -12,6 +12,6 @@ class ProgressView(View):
             import decimal
             progress = round(decimal.Decimal(person.progress), 2)
             json_data = json.dumps(progress)
-            return HttpResponse(json_data, mimetype="application/json")
+            return HttpResponse(json_data, content_type="application/json")
         except Person.DoesNotExist:
             return HttpResponseNotFound()

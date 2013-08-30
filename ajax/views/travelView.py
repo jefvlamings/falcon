@@ -25,7 +25,7 @@ class TopTravelsView(View):
         return HttpResponse(json_data, mimetype="application/json")
 
     def top_travels(self):
-        travels = Location.objects.filter(person_id=self.person.id).order_by('travel_distance')[::-1][:20]
+        travels = Location.objects.filter(person_id=self.person.id).order_by('travel_distance')[::-1][:40]
         return travels
 
 class TopTravelFriendsView(View):
@@ -48,7 +48,7 @@ class TopTravelFriendsView(View):
         return HttpResponse(json_data, mimetype="application/json")
 
     def top_travel_friends(self):
-        travels = Location.objects.filter(pk__in=Location.objects.order_by().values('person_id').annotate(max_id=Max('id')).values('max_id')).order_by('travel_distance')[::-1][:20]
+        travels = Location.objects.filter(pk__in=Location.objects.order_by().values('person_id').annotate(max_id=Max('id')).values('max_id')).order_by('travel_distance')[::-1][:40]
         return travels
 
 

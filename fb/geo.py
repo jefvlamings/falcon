@@ -47,7 +47,7 @@ class Mapquest:
             names_bit = names[0:99]
             response += self.batch_request_names_bit(names_bit)
             names = names[99:]
-        return response
+            yield response
 
     def batch_request_names_bit(self, names):
         request_string = ''

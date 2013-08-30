@@ -37,9 +37,9 @@ class CreateView(View):
         self.update_progress(10)
         self.fetch_user_data()
         self.fetch_locations()
-        self.fetch_geo_data()
-        self.update_progress(90)
         self.store_distances()
+        # self.update_progress(90)
+        # self.fetch_geo_data()
         self.update_progress(100)
 
     def fetch_friend_list(self):
@@ -103,7 +103,7 @@ class CreateView(View):
     def fetch_geo_data(self):
 
         # Get all unique location names for which no latitude has been set
-        locations = Location.objects.filter(latitude__isnull=True)
+        locations = Location.objects.all()
         location_names = []
         for location in locations:
             location_names.append(location.name)
@@ -111,11 +111,13 @@ class CreateView(View):
 
         # Fetch all geocoding data for these location names
         mapquest = Mapquest()
-        geo_data = mapquest.batch_request_names(locations_names_unique)
+        generator = mapquest.batch_request_names(locations_names_unique)
+        for responses in generator:
+            for response in responses:
+                # Process and store geocoding data
+                store = Store()
+                store.geo_data(response)
 
-        # Process and store all geocoding data
-        store = Store()
-        store.geo_data(geo_data)
 
     def store_distances(self):
         self.store_distances_between_hometowns()
