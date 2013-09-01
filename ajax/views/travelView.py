@@ -1,7 +1,7 @@
 from django.views.generic.base import View
 from django.http import HttpResponseNotFound, HttpResponse
 from fb.models import Person, Location
-from django.db.models import Max, Count
+from django.db.models import Max
 import json
 
 
@@ -27,6 +27,7 @@ class TopTravelsView(View):
     def top_travels(self):
         travels = Location.objects.filter(person_id=self.person.id).order_by('travel_distance')[::-1][:40]
         return travels
+
 
 class TopTravelFriendsView(View):
 

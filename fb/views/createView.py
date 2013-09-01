@@ -32,15 +32,15 @@ class CreateView(View):
         return HttpResponse()
 
     def fetch_data(self):
-        self.update_progress(0)
-        self.fetch_friend_list()
-        self.update_progress(10)
-        self.fetch_user_data()
-        self.fetch_locations()
-        self.store_distances()
+        # self.update_progress(0)
+        # self.fetch_friend_list()
+        # self.update_progress(10)
+        # self.fetch_user_data()
+        # self.fetch_locations()
+        self.fetch_geo_data()
         # self.update_progress(90)
-        # self.fetch_geo_data()
-        self.update_progress(100)
+        # self.store_distances()
+        # self.update_progress(100)
 
     def fetch_friend_list(self):
         request = {
@@ -103,7 +103,7 @@ class CreateView(View):
     def fetch_geo_data(self):
 
         # Get all unique location names for which no latitude has been set
-        locations = Location.objects.all()
+        locations = Location.objects.filter(country__isnull=True)
         location_names = []
         for location in locations:
             location_names.append(location.name)

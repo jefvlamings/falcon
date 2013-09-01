@@ -36,7 +36,10 @@ class ReportView(View):
                     'person': self.person,
                     'youngest_friends': self.get_five_youngest_friends(),
                     'oldest_friends': self.get_five_oldest_friends(),
-                    # 'nearest_hometowns': self.get_five_nearest_hometowns(),
+                    'male_ages': self.get_male_ages(),
+                    'female_ages': self.get_female_ages(),
+                    'male_relationships': self.get_male_relationships(),
+                    'female_relationships': self.get_female_relationships()
                 }
             )
 
@@ -48,16 +51,31 @@ class ReportView(View):
         friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5]
         return friends
 
-    def get_five_nearest_hometowns(self):
-        hometowns = self.person.friends_hometowns.distinct().order_by('hometown_distance')[:5]
-        furthest_hometowns = []
-        for hometown in hometowns:
-            try:
-                person = Person.objects.get(id=hometown.person_id)
-            except Person.DoesNotExist:
-                continue
-            furthest_hometowns.append({
-                'person': person,
-                'location': hometown
-            })
-        return furthest_hometowns
+    def get_male_ages(self):
+        ages = []
+        male_friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='M',birthday__isnull=False)
+        for male_friend in male_friends:
+            ages.append(male_friend.age)
+        return ages
+
+    def get_female_ages(self):
+        ages = []
+        female_friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='F',birthday__isnull=False)
+        for female_friend in female_friends:
+            ages.append(female_friend.age)
+        return ages
+
+    def get_male_relationships(self):
+        output = []
+        male_friends = self.person.friends.filter(relationship_status__isnull=False, gender='M')
+        for male_friend in male_friends:
+            output.append(str(male_friend.relationship_status))
+        return output
+
+    def get_female_relationships(self):
+        output = []
+        female_friends = self.person.friends.filter(relationship_status__isnull=False, gender='F')
+        for female_friend in female_friends:
+            output.append(str(female_friend.relationship_status))
+        print output
+        return output

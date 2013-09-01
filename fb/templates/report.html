@@ -16,7 +16,33 @@
                 <li>Birthday: {{ person.birthday }}</li>
             </ul>
         </div>
-        <div class="col-4 col-lg-offset-1">
+    </div>
+
+   {# Demographics #}
+    <div class="row">
+        <h3>Demographics</h3>
+         <div class="col-12 text-center">
+            <div id="report-demographics-buttons" class="btn-group">
+                <button data-url="percentages" type="button" class="btn btn-default active">Percentages</button>
+                <button data-url="totals" type="button" class="btn btn-default">Totals</button>
+            </div>
+        </div>
+        <div class="col-12">
+            <div id="demographics-chart"></div>
+            <script>
+                var reportMaleAges = [];
+                var reportFemaleAges = [];
+                {% for male_age in male_ages %}
+                    reportMaleAges.push({{ male_age }})
+                {% endfor %}
+                {% for female_age in female_ages %}
+                    reportFemaleAges.push({{ female_age }})
+                {% endfor %}
+            </script>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6">
             <h3>Youngest</h3>
             <ol>
             {% for friend in youngest_friends %}
@@ -27,7 +53,7 @@
             {% endfor %}
             </ol>
         </div>
-        <div class="col-4">
+        <div class="col-6">
             <h3>Oldest</h3>
             <ol>
             {% for friend in oldest_friends %}
@@ -40,10 +66,34 @@
         </div>
     </div>
 
+   {# Relationshipos #}
+    <div class="row">
+        <h3>Relationships</h3>
+         <div class="col-12 text-center">
+            <div id="report-relationship-buttons" class="btn-group">
+                <button data-url="percentages" type="button" class="btn btn-default active">Percentages</button>
+                <button data-url="totals" type="button" class="btn btn-default">Totals</button>
+            </div>
+        </div>
+        <div class="col-12">
+            <div id="relationships-chart"></div>
+            <script>
+                var reportMaleRelationships = [];
+                var reportFemaleRelationships = [];
+                {% for male_relationship in male_relationships %}
+                    reportMaleRelationships.push("{{ male_relationship }}")
+                {% endfor %}
+                {% for female_relationship in female_relationships %}
+                    reportFemaleRelationships.push("{{ female_relationship }}")
+                {% endfor %}
+            </script>
+        </div>
+    </div>
+
     {# Map #}
     <div id="report-locations" class="row">
         <h3>Locations</h3>
-        <div class="span12 text-center">
+        <div class="col-12 text-center">
             <div id="report-locations-buttons" class="btn-group">
                 <button data-url="top-travels" type="button" class="btn btn-default active">Your travels</button>
                 <button data-url="furthest-friends" type="button" class="btn btn-default">Furthest hometowns</button>
@@ -55,10 +105,6 @@
         <div id="map-canvas"></div>
     </div>
 
-    <div class="row">
-        <h3>test</h3>
-    </div>
-
 {% endblock %}
 
 {# Javascript files #}
@@ -67,4 +113,5 @@
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
     {% load staticfiles %}
     <script src="{% static "js/report.js" %}"></script>
+    <script src="{% static "js/highcharts.js" %}"></script>
 {% endblock %}
