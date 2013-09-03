@@ -77,5 +77,4 @@ class ReportView(View):
         female_friends = self.person.friends.filter(relationship_status__isnull=False, gender='F')
         for female_friend in female_friends:
             output.append(str(female_friend.relationship_status))
-        print output
         return output

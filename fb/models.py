@@ -92,6 +92,27 @@ class Person(models.Model):
         )
         return locations
 
+    @property
+    def male_friends(self):
+        return self.friends.filter(gender='M')
+
+    @property
+    def male_friends_percentage(self):
+        number_of_male_friends = float(len(self.male_friends))
+        number_of_friends = float(len(self.friends))
+        percentage = (number_of_male_friends / number_of_friends) * 100
+        return percentage
+
+    @property
+    def female_friends(self):
+        return self.friends.filter(gender='F')
+
+    @property
+    def female_friends_percentage(self):
+        number_of_female_friends = float(len(self.female_friends))
+        number_of_friends = float(len(self.friends))
+        return number_of_female_friends / number_of_friends * 100
+
     def add_relationship(self, person):
         relationship, created = Relationship.objects.get_or_create(from_person=person, to_person=self)
         return relationship

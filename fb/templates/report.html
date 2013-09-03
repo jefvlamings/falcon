@@ -2,11 +2,14 @@
 
 {% block content %}
 
-    <h1>Report</h1>
+    {% load staticfiles %}
 
+    {# General #}
+    <div class="page-header text-center">
+        <h2>Personal info</h2>
+    </div>
     <div class="row">
-        <div id="person" class="col-3" data-id="{{ person.id }}">
-            <h3>Personal info</h3>
+        <div id="person" class="col-3 col-lg-offset-5" data-id="{{ person.id }}">
             <img src="https://graph.facebook.com/{{ person.fb_id }}/picture?type=large" alt="{{ friend.first_name }} {{ friend.last_name }}">
             <ul>
                 <li>First name: {{ person.first_name }}</li>
@@ -18,9 +21,37 @@
         </div>
     </div>
 
-   {# Demographics #}
+    {# General #}
+    <div class="page-header text-center">
+        <h2>General</h2>
+    </div>
     <div class="row">
-        <h3>Demographics</h3>
+        <div class="col-4 col-lg-offset-4">
+            <div class="box">
+                <div class="box-header">
+                    <span class="large-text">Friends</span>
+                </div>
+                <div class="box-content">
+                    <div class="box-col-2">
+                        <img src="{% static "img/male.jpg" %}" alt="My image"/><br>
+                        <span class="large-text">{{ person.male_friends_percentage|floatformat:0 }}%</span><br>
+                        <span class="small-text">({{ person.male_friends|length }}/{{ person.friends|length }})</span>
+                    </div>
+                    <div class="box-col-2">
+                        <img src="{% static "img/female.jpg" %}" alt="My image"/><br>
+                        <span class="large-text">{{ person.female_friends_percentage|floatformat:0 }}%</span><br>
+                        <span class="small-text">({{ person.female_friends|length }}/{{ person.friends|length }})</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   {# Demographics #}
+    <div class="page-header text-center">
+        <h2>Demographics</h2>
+    </div>
+    <div class="row">
          <div class="col-12 text-center">
             <div id="report-demographics-buttons" class="btn-group">
                 <button data-url="percentages" type="button" class="btn btn-default active">Percentages</button>
@@ -40,6 +71,11 @@
                 {% endfor %}
             </script>
         </div>
+    </div>
+
+    {# Age #}
+    <div class="page-header text-center">
+        <h2>Age</h2>
     </div>
     <div class="row">
         <div class="col-6">
@@ -66,9 +102,11 @@
         </div>
     </div>
 
-   {# Relationshipos #}
+   {# Relationships #}
+    <div class="page-header text-center">
+        <h2>Relationships</h2>
+    </div>
     <div class="row">
-        <h3>Relationships</h3>
          <div class="col-12 text-center">
             <div id="report-relationship-buttons" class="btn-group">
                 <button data-url="percentages" type="button" class="btn btn-default active">Percentages</button>
@@ -91,8 +129,10 @@
     </div>
 
     {# Map #}
+    <div class="page-header text-center">
+        <h2>Locations</h2>
+    </div>
     <div id="report-locations" class="row">
-        <h3>Locations</h3>
         <div class="col-12 text-center">
             <div id="report-locations-buttons" class="btn-group">
                 <button data-url="top-travels" type="button" class="btn btn-default active">Your travels</button>

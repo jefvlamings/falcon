@@ -1,0 +1,54 @@
+#map-canvas {
+  height: 600px;
+}
+#content {
+  width: 970px;
+  margin: 0 auto;
+  margin-bottom: 100px;
+}
+.page-header {
+  margin-top: 80px;
+}
+.btn-group {
+  margin-bottom: 10px;
+}
+.box {
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  *zoom: 1;
+}
+.box:before,
+.box:after {
+  display: table;
+  content: "";
+}
+.box:after {
+  clear: both;
+}
+.box .box-header {
+  border-bottom: 1px solid #cccccc;
+  text-align: center;
+  padding: 3px;
+  font-size: 16px;
+  font-weight: bold;
+}
+.box .box-col-2 {
+  float: left;
+  width: 50%;
+  text-align: center;
+  padding: 10px;
+  border-right: 1px solid #cccccc;
+}
+.box .box-col-2 img {
+  margin-bottom: 5px;
+}
+.box .box-col-2:last-child {
+  border-right: none;
+}
+.box .large-text {
+  font-size: 20px;
+  line-heihgt: 20px;
+}
+.box .small-text {
+  font-size: 10px;
+}
