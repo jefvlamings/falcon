@@ -2,7 +2,7 @@ from django.db import models
 from datetime import date
 
 
-# Create your models here.
+# Person
 class Person(models.Model):
 
     GENDER_CHOICES = (
@@ -37,7 +37,6 @@ class Person(models.Model):
     birthday = models.DateField(null=True, blank=True)
     relationship_status = models.CharField(max_length=1, choices=RELATIONSHIP_CHOICES)
     significant_other = models.CharField(max_length=30, null=True, blank=True)
-    progress = models.FloatField(null=True, blank=True)
 
     @property
     def name(self):
@@ -59,6 +58,13 @@ class Person(models.Model):
         try:
             return Location.objects.filter(person=self)
         except Location.DoesNotExist:
+            return None
+
+    @property
+    def progress(self):
+        try:
+            return Progress.objects.filter(person=self)
+        except Progress.DoesNotExist:
             return None
 
     @property
@@ -121,11 +127,13 @@ class Person(models.Model):
         Relationship.objects.filter(from_person=self, to_person=person).delete()
 
 
+# Relationship
 class Relationship(models.Model):
     from_person = models.ForeignKey(Person, related_name='from_people')
     to_person = models.ForeignKey(Person, related_name='to_people')
 
 
+# Location
 class Location(models.Model):
 
     LOCATION_TYPES = (
@@ -145,3 +153,10 @@ class Location(models.Model):
     travel_distance = models.FloatField(null=True, blank=True)
     hometown_distance = models.FloatField(null=True, blank=True)
     type = models.CharField(max_length=1, choices=LOCATION_TYPES)
+
+
+# Progress
+class Progress(models.Model):
+    person = models.ForeignKey('Person')
+    percentage = models.FloatField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)

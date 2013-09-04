@@ -1,14 +1,14 @@
 from django.views.generic.base import View
 from django.shortcuts import render
 from django.http import HttpResponseNotFound
-from fb.models import Person, Location
-from django.db.models import Max
+from fb.models import Person, Progress
 import datetime
 
 
 class ReportView(View):
 
     person = None
+    progress = None
 
     def get(self, request, id):
 
@@ -18,13 +18,20 @@ class ReportView(View):
         except Person.DoesNotExist:
             return HttpResponseNotFound()
 
+        # First check if a Progress exists for this person
+        try:
+            self.progress = Progress.objects.get(person=self.person)
+        except Progress.DoesNotExist:
+            return HttpResponseNotFound()
+
         # If the report is not yet ready, show a status of the report
-        if self.person.progress < 100:
+        if self.progress.percentage < 100:
             return render(
                 request,
                 'status.html',
                 {
                     'person': self.person,
+                    'progress': self.progress,
                 }
             )
         # Show the report

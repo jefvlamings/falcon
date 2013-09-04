@@ -6,10 +6,11 @@
 
     <div class="row">
         <div class="col-lg-12">
-            <h1>Report in progress (<span id="progress" data-id="{{ person.id }}">{{ person.progress|floatformat:2 }}%</span>)</h1>
+            <h1>Report in progress (<span id="progress" data-id="{{ progress.id }}">{{ progress.percentage|floatformat:2 }}%</span>)</h1>
             <div class="progress">
-                <div id="progress-bar" class="progress-bar" style="width: {{ person.progress|floatformat:2 }}%;"></div>
+                <div id="progress-bar" class="progress-bar" style="width: {{ progress.percentage|floatformat:2 }}%;"></div>
             </div>
+            <p id="progress-description">test</p>
         </div>
     </div>
 

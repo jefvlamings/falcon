@@ -2,7 +2,7 @@ from django.views.generic.base import View
 from django.http import HttpResponse, HttpResponseNotFound
 from fb.facebook import Api
 from fb.geo import Mapquest
-from fb.models import Person, Location
+from fb.models import Person, Location, Progress
 from fb.storage import Store
 import fb.geo
 
@@ -10,20 +10,29 @@ import fb.geo
 class CreateView(View):
 
     person = None
-    progress = 0
+    progress = None
     number_of_requests = 0
 
     def get(self, request, id):
 
         # First check if a Person could be found for this id
         try:
-            person = Person.objects.get(pk=id)
+            self.person = Person.objects.get(pk=id)
         except Person.DoesNotExist:
             return HttpResponseNotFound()
 
+        # Check if a progress exists for this Person, otherwise create one
+        try:
+            self.progress = Progress.objects.get(person=self.person)
+        except Progress.DoesNotExist:
+            self.progress = Progress.objects.create(
+                person=self.person,
+                percentage=0,
+                description='Let\'s create a report for you!'
+            )
+
         # Only start fetching data if an access_token has been set
-        if person.access_token is not None:
-            self.person = person
+        if self.person.access_token is not None:
             self.fetch_data()
         else:
             return HttpResponseNotFound
@@ -32,22 +41,24 @@ class CreateView(View):
         return HttpResponse()
 
     def fetch_data(self):
-        # self.update_progress(0)
-        # self.fetch_friend_list()
-        # self.update_progress(10)
-        # self.fetch_user_data()
-        # self.fetch_locations()
-        self.fetch_geo_data()
-        # self.update_progress(90)
-        # self.store_distances()
-        # self.update_progress(100)
+
+        # TODO: Fetch user hometowns by its location ID
+        # TODO: Document each function
+
+        self.fetch_friend_list()
+        self.fetch_user_data()
+        self.fetch_locations()
+        # self.fetch_geo_data()
+        self.store_distances()
 
     def fetch_friend_list(self):
+
+        self.update_progress(1, 'Collect a list of all your friends')
+
         request = {
             'id': self.person.fb_id,
             'request': str(self.person.fb_id) + '/friends'
         }
-        number_of_requests = len(request)
         api = Api(self.person.access_token)
         generator = api.request([request])
         for responses in generator:
@@ -59,9 +70,11 @@ class CreateView(View):
                         person = Person.objects.create(fb_id=friend['id'])
                     person.add_relationship(self.person)
                     person.save()
-            self.update_progress_by_api(number_of_requests, len(api.queued_requests), 10, 20)
 
     def fetch_user_data(self):
+
+        self.update_progress(10, 'Collecting general information of each of your friends.')
+
         requests = []
         friends = self.person.friends
         for friend in friends:
@@ -69,16 +82,23 @@ class CreateView(View):
                 'id': friend.fb_id,
                 'request': str(friend.fb_id)
             })
-        number_of_requests = len(requests)
         api = Api(self.person.access_token)
+        requested = len(requests)
         generator = api.request(requests)
         for responses in generator:
             for response in responses:
                 store = Store()
                 store.user(response, self.person)
-            self.update_progress_by_api(number_of_requests, len(api.queued_requests), 20, 40)
+            processed_total = requested - len(api.queued_requests)
+            self.update_progress(
+                self.calculate_progress_by_queue(requested, len(api.queued_requests), 20, 40),
+                'General information for %s of %s friends already fetched' % (processed_total, requested)
+            )
 
     def fetch_locations(self):
+
+        self.update_progress(40, 'Collecting your and your friends locations.')
+
         requests = []
         friends = self.person.friends
         for friend in friends:
@@ -86,9 +106,10 @@ class CreateView(View):
                 'id': friend.fb_id,
                 'request': str(friend.fb_id) + '/locations?limit=500'
             })
-        number_of_requests = len(requests)
         api = Api(self.person.access_token)
+        requested = len(requests)
         generator = api.request(requests)
+        location_count = 0
         for responses in generator:
             for response in responses:
                 try:
@@ -96,9 +117,14 @@ class CreateView(View):
                 except Person.DoesNotExist:
                     continue
                 for location in response['data']:
+                    location_count += 1
                     store = Store()
                     store.location(location, person)
-            self.update_progress_by_api(number_of_requests, len(api.queued_requests), 40, 80)
+
+            self.update_progress(
+                self.calculate_progress_by_queue(requested, len(api.queued_requests), 40, 80),
+                '%s locations collected sofar' % location_count
+            )
 
     def fetch_geo_data(self):
 
@@ -120,8 +146,11 @@ class CreateView(View):
 
 
     def store_distances(self):
+        self.update_progress(80, 'Calculating distances between your hometown and those of your friends.')
         self.store_distances_between_hometowns()
+        self.update_progress(90, 'Calculating travel distances for you and each of your friends.')
         self.store_distances_from_hometowns()
+        self.update_progress(100, 'Creating a report based on all collected information.')
 
     def store_distances_between_hometowns(self):
 
@@ -152,12 +181,12 @@ class CreateView(View):
             location.travel_distance = distance
             location.save()
 
-    def update_progress(self, level):
-        self.person.progress = level
-        self.person.save()
+    def update_progress(self, percentage, description):
+        self.progress.percentage = percentage
+        self.progress.description = description
+        self.progress.save()
 
-    def update_progress_by_api(self, requests, queue, start, stop):
-        progress_range = float(stop) - float(start)
-        progress = float(start) + (((float(requests) - float(queue)) / float(requests)) * float(progress_range))
-        self.person.progress = progress
-        self.person.save()
+    def calculate_progress_by_queue(self, total, togo, begin, end):
+        progress_range = float(end) - float(begin)
+        percentage = float(begin) + (((float(total) - float(togo)) / float(total)) * float(progress_range))
+        return percentage

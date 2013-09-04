@@ -5,15 +5,16 @@ $(document).ready(function() {
     var updateProgress = function() {
         $.ajax({
             type: "GET",
-            url: "/progress/" + $('#progress').attr('data-id'),
+            url: "/ajax/progress/" + $('#progress').attr('data-id'),
             dataType: "json"
         }).success(function(json) {
             if(json == 100) {
                 clearInterval(interval);
             }
-            $('#progress').html(json + '%');
-            $('#progress-bar').width(json + '%');
-            document.title = title + ' (' +json + '%)';
+            $('#progress').html(json.percentage + '%');
+            $('#progress-bar').width(json.percentage + '%');
+            $('#progress-description').html(json.description);
+            document.title = title + ' (' +json.percentage + '%)';
         });
     }
     var interval = window.setInterval(updateProgress, 500);
