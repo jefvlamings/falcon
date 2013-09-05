@@ -45,6 +45,8 @@ class ReportView(View):
                     'oldest_friends': self.get_five_oldest_friends(),
                     'male_ages': self.get_male_ages(),
                     'female_ages': self.get_female_ages(),
+                    'average_male_age': self.get_average_male_age(),
+                    'average_female_age': self.get_average_female_age(),
                     'youngest_male': self.get_youngest_male(),
                     'youngest_female': self.get_youngest_female(),
                     'oldest_male': self.get_oldest_male(),
@@ -73,6 +75,14 @@ class ReportView(View):
     def get_five_oldest_friends(self):
         friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5]
         return friends
+
+    def get_average_male_age(self):
+        male_ages = self.get_male_ages()
+        return reduce(lambda x, y: x + y, male_ages) / len(male_ages)
+
+    def get_average_female_age(self):
+        female_ages = self.get_female_ages()
+        return reduce(lambda x, y: x + y, female_ages) / len(female_ages)
 
     def get_male_ages(self):
         ages = []
