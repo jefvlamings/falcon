@@ -26,7 +26,7 @@ class Store():
                 continue
             location.save()
 
-    def location(self, response, person):
+    def fb_location_by_person(self, response, person):
         fb_location = self.process_location(response)
         if fb_location is None:
             return
@@ -35,6 +35,7 @@ class Store():
             location = Location.objects.get(person_id=person.id, type='P', name=fb_location['name'])
         except Location.DoesNotExist:
             location = Location.objects.create(person_id=person.id, type='P')
+        location.fb_id = fb_location['id']
         location.name = fb_location['name']
         location.latitude = fb_location['latitude']
         location.longitude = fb_location['longitude']
@@ -43,9 +44,32 @@ class Store():
     def process_location(self, data):
         location = {}
         try:
+            location['id'] = data['id']
             location['name'] = data['place']['name']
             location['latitude'] = data['place']['location']['latitude']
             location['longitude'] = data['place']['location']['longitude']
+        except (KeyError, TypeError):
+            return None
+        return location
+
+    def fb_location_by_locations(self, response, locations):
+        fb_location = self.process_fb_location(response)
+        if fb_location is None:
+            return
+        for location in locations:
+            location.name = fb_location['name']
+            location.latitude = fb_location['latitude']
+            location.longitude = fb_location['longitude']
+            location.save()
+
+    def process_fb_location(self, data):
+        print data
+        location = {}
+        try:
+            location['id'] = data['id']
+            location['name'] = data['name']
+            location['latitude'] = data['location']['latitude']
+            location['longitude'] = data['location']['longitude']
         except (KeyError, TypeError):
             return None
         return location
@@ -76,18 +100,18 @@ class Store():
         person.significant_other = user['significant_other']
         person.relationship_status = user['relationship_status']
 
-        if user['hometown'] is not None:
-            self.hometown(user['hometown'], person)
+        if user['hometown_id'] is not None:
+            self.hometown(user['hometown_id'], person)
 
         person.save()
         return person
 
-    def hometown(self, hometown, person):
+    def hometown(self, id, person):
         try:
             location = Location.objects.get(person_id=person.id, type='H')
         except Location.DoesNotExist:
             location = Location.objects.create(person_id=person.id, type='H')
-        location.name = hometown
+        location.fb_id = id
         location.save()
 
     def process_user(self, data):
@@ -101,7 +125,7 @@ class Store():
         user['significant_other'] = significant_other.get('id', None)
         user['relationship_status'] = self.string_to_relationship_status(data.get('relationship_status', ''))
         hometown = data.get('hometown', {})
-        user['hometown'] = hometown.get('name', None)
+        user['hometown_id'] = hometown.get('id', None)
         return user
 
     def string_to_date(self, string):

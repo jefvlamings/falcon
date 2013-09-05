@@ -5,7 +5,7 @@ $(document).ready(function() {
     var updateProgress = function() {
         $.ajax({
             type: "GET",
-            url: "/ajax/progress/" + $('#progress').attr('data-id'),
+            url: "/ajax/progress/" + $('#progress').attr('data-id') + '/',
             dataType: "json"
         }).success(function(json) {
             if(json == 100) {

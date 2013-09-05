@@ -45,10 +45,26 @@ class ReportView(View):
                     'oldest_friends': self.get_five_oldest_friends(),
                     'male_ages': self.get_male_ages(),
                     'female_ages': self.get_female_ages(),
+                    'youngest_male': self.get_youngest_male(),
+                    'youngest_female': self.get_youngest_female(),
+                    'oldest_male': self.get_oldest_male(),
+                    'oldest_female': self.get_oldest_female(),
                     'male_relationships': self.get_male_relationships(),
                     'female_relationships': self.get_female_relationships()
                 }
             )
+
+    def get_youngest_male(self):
+        return self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='M',birthday__isnull=False).order_by('birthday').reverse()[0]
+
+    def get_youngest_female(self):
+        return self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='F',birthday__isnull=False).order_by('birthday').reverse()[0]
+
+    def get_oldest_male(self):
+        return self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='M',birthday__isnull=False).order_by('birthday')[0]
+
+    def get_oldest_female(self):
+        return self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='F',birthday__isnull=False).order_by('birthday')[0]
 
     def get_five_youngest_friends(self):
         friends = self.person.friends.order_by('birthday').reverse()[:5]

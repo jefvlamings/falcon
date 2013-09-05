@@ -45,6 +45,14 @@
 .box .box-col-2:last-child {
   border-right: none;
 }
+.box .box-col-2.box-blue {
+  padding-top: 6px;
+  border-top: 4px solid #2f7ed8;
+}
+.box .box-col-2.box-pink {
+  padding-top: 6px;
+  border-top: 4px solid #ff5f51;
+}
 .box .large-text {
   font-size: 20px;
   line-heihgt: 20px;

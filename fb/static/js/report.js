@@ -34,7 +34,7 @@ var ReportMap = function() {
         var marker = new google.maps.Marker({
             position: new google.maps.LatLng(data.latitude,data.longitude),
             map: self.map,
-            icon: "https://graph.facebook.com/" + data.person.fbid + "/picture?width=30&height=30",
+            icon: "https://graph.facebook.com/" + data.person.fbid + "/picture?width=20&height=20",
             title: data.location + " (" + data.person.name + ")"
         });
         self.markers.push(marker);

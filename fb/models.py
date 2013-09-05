@@ -144,6 +144,7 @@ class Location(models.Model):
     )
 
     person = models.ForeignKey('Person')
+    fb_id = models.CharField(max_length=30, null=True, blank=True)
     name = models.TextField(null=True, blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)

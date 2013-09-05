@@ -1,3 +1,6 @@
+@pink: #ff5f51;
+@blue: #2f7ed8;
+
 .clearfix() {
   *zoom: 1;
   &:before,
@@ -50,6 +53,14 @@
         }
         &:last-child {
             border-right: none;
+        }
+        &.box-blue {
+            padding-top: 6px;
+            border-top: 4px solid @blue;
+        }
+        &.box-pink {
+            padding-top: 6px;
+            border-top: 4px solid @pink;
         }
     }
     .large-text {
