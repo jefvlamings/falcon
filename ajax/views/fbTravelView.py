@@ -49,7 +49,19 @@ class TopTravelFriendsView(View):
         return HttpResponse(json_data, mimetype="application/json")
 
     def top_travel_friends(self):
-        travels = Location.objects.filter(pk__in=Location.objects.order_by().values('person_id').annotate(max_id=Max('id')).values('max_id')).order_by('travel_distance')[::-1][:20]
+        from django.db import connection
+        travels = Location.objects.raw(
+            'SELECT * '
+            'FROM `fb_location` AS a '
+            'WHERE a.travel_distance = ('
+                'SELECT MAX(travel_distance) '
+                'FROM `fb_location` AS b '
+                'WHERE b.person_id = a.person_id'
+            ')'
+            'ORDER BY a.travel_distance DESC '
+        )[:30]
+
+        print connection.queries
         return travels
 
 

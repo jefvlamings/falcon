@@ -39,6 +39,7 @@ class Store():
         location.name = fb_location['name']
         location.latitude = fb_location['latitude']
         location.longitude = fb_location['longitude']
+        location.created_time = fb_location['created_time']
         location.save()
 
     def process_location(self, data):
@@ -48,6 +49,7 @@ class Store():
             location['name'] = data['place']['name']
             location['latitude'] = data['place']['location']['latitude']
             location['longitude'] = data['place']['location']['longitude']
+            location['created_time'] = datetime.datetime.strptime(data['created_time'][:19], "%Y-%m-%dT%H:%M:%S")
         except (KeyError, TypeError):
             return None
         return location
@@ -63,7 +65,6 @@ class Store():
             location.save()
 
     def process_fb_location(self, data):
-        print data
         location = {}
         try:
             location['id'] = data['id']

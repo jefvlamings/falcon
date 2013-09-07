@@ -153,6 +153,7 @@ class Location(models.Model):
     country = models.CharField(max_length=255, null=True, blank=True)
     travel_distance = models.FloatField(null=True, blank=True)
     hometown_distance = models.FloatField(null=True, blank=True)
+    created_time = models.DateTimeField(null=True, blank=True)
     type = models.CharField(max_length=1, choices=LOCATION_TYPES)
 
 
