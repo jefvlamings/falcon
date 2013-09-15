@@ -28,11 +28,25 @@ class Store():
                 continue
             location.save()
 
+    def fb_locations(self, response, type):
+        if type is 'person':
+            try:
+                person = Person.objects.get(fb_id=response['id'])
+                for fb_location in response['data']:
+                    self.fb_location_by_person(fb_location, person)
+            except Person.DoesNotExist:
+                return
+        if type is 'location':
+            try:
+                locations = Location.objects.filter(fb_id=response['id'])
+                self.fb_location_by_locations(response['data'], locations)
+            except Location.DoesNotExist:
+                return
+
     def fb_location_by_person(self, response, person):
         fb_location = self.process_location(response)
         if fb_location is None:
             return
-
         try:
             location = Location.objects.get(person_id=person.id, type='P', name=fb_location['name'])
         except Location.DoesNotExist:
@@ -88,26 +102,50 @@ class Store():
             return None
         return status
 
-    def user(self, response, friend):
+    def user(self, response, person):
         user = self.process_user(response['data'])
+        try:
+            friend = Person.objects.get(fb_id=response['id'])
+        except Person.DoesNotExist:
+            friend = Person.objects.create(fb_id=response['id'])
+        friend.add_relationship(person)
+        friend.first_name = user['first_name']
+        friend.middle_name = user['middle_name']
+        friend.last_name = user['last_name']
+        friend.gender = user['gender']
+        friend.birthday = user['birthday']
+        friend.significant_other = user['significant_other']
+        friend.relationship_status = user['relationship_status']
+
+        if user['hometown_id'] is not None:
+            self.hometown(user['hometown_id'], friend)
+
+        friend.save()
+        return friend
+
+    def mutual_friends(self, response):
         try:
             person = Person.objects.get(fb_id=response['id'])
         except Person.DoesNotExist:
-            person = Person.objects.create(fb_id=response['id'])
-        person.add_relationship(friend)
-        person.first_name = user['first_name']
-        person.middle_name = user['middle_name']
-        person.last_name = user['last_name']
-        person.gender = user['gender']
-        person.birthday = user['birthday']
-        person.significant_other = user['significant_other']
-        person.relationship_status = user['relationship_status']
+            return
+        for fb_friend in response['data']:
+            self.relationship(fb_friend, person)
 
-        if user['hometown_id'] is not None:
-            self.hometown(user['hometown_id'], person)
+    def fb_relationship(self, response, person):
+        for friend in response['data']:
+            try:
+                friend = Person.objects.get(fb_id=friend['id'])
+            except Person.DoesNotExist:
+                friend = Person.objects.create(fb_id=friend['id'])
+            friend.add_relationship(person)
+            friend.save()
 
-        person.save()
-        return person
+    def relationship(self, fb_friend, person):
+        try:
+            friend = Person.objects.get(fb_id=fb_friend['id'])
+            person.add_relationship(friend)
+        except Person.DoesNotExist:
+            return None
 
     def hometown(self, id, person):
         try:

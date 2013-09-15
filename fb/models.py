@@ -119,6 +119,14 @@ class Person(models.Model):
         number_of_friends = float(len(self.friends))
         return number_of_female_friends / number_of_friends * 100
 
+    def mutual_friends(self, person):
+        return person.friends
+
+    def mutual_friends_percentage(self, person):
+        mutual_friends = float(len(self.mutual_friends(person)))
+        friends = float(len(self.friends()))
+        return mutual_friends / friends * 100
+
     def add_relationship(self, person):
         relationship, created = Relationship.objects.get_or_create(from_person=person, to_person=self)
         return relationship

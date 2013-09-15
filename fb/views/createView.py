@@ -27,7 +27,6 @@ class CreateView(View):
         except Person.DoesNotExist:
             return HttpResponseNotFound()
         if self.person.access_token is not None:
-            # Only start fetching data if an access_token has been set
             self.fetch_data()
         else:
             return HttpResponseNotFound
@@ -35,15 +34,16 @@ class CreateView(View):
 
     def fetch_data(self):
         self.start_progress()
-        # self.fetch_friend_list()
-        # self.fetch_user_data()
+        self.fetch_friend_list()
+        self.fetch_user_data()
+        self.fetch_mutual_friends()
         self.fetch_locations()
-        # self.fetch_locations_by_fb_id()
-        # self.store_distances()
+        self.fetch_locations_by_fb_id()
+        self.store_distances()
 
     def start_progress(self):
         """
-        We continously monitor the data fetching progress. This function makes
+        We continuously monitor the data fetching progress. This function makes
         sure a Progress object is available to keep track of all processes
         """
         try:
@@ -56,31 +56,17 @@ class CreateView(View):
             )
 
     def fetch_friend_list(self):
-        self.update_progress(
-            1,
-            'Collect a list of all your friends'
-        )
-        request = {
+        requests = [{
             'id': self.person.fb_id,
             'request': str(self.person.fb_id) + '/friends'
+        }]
+        progress = {
+            'from': 1, 'to': 10,
+            'description': 'Collecting a list of all your friends'
         }
-        api = Api(self.person.access_token)
-        generator = api.request([request])
-        for responses in generator:
-            for response in responses:
-                for friend in response['data']:
-                    try:
-                        person = Person.objects.get(fb_id=friend['id'])
-                    except Person.DoesNotExist:
-                        person = Person.objects.create(fb_id=friend['id'])
-                    person.add_relationship(self.person)
-                    person.save()
+        self.store_api_response('friend_list', requests, progress)
 
     def fetch_user_data(self):
-        self.update_progress(
-            10,
-            'Collecting general information of each of your friends.'
-        )
         requests = []
         friends = self.person.friends
         for friend in friends:
@@ -88,32 +74,28 @@ class CreateView(View):
                 'id': friend.fb_id,
                 'request': str(friend.fb_id)
             })
-        api = Api(self.person.access_token)
-        requested = len(requests)
-        generator = api.request(requests)
-        for responses in generator:
-            for response in responses:
-                store = Store()
-                store.user(response, self.person)
-                processed_total = requested - len(api.queued_requests)
-                self.update_progress(
-                    self.calculate_progress_by_queue(
-                        requested,
-                        len(api.queued_requests),
-                        10,
-                        20
-                    ),
-                    'General information for %s of %s friends already fetched'
-                    % (processed_total, requested)
-                )
+        progress = {
+            'from': 10, 'to': 15,
+            'description': 'Collecting general information of each of your '
+                           'friends'
+        }
+        self.store_api_response('user_data', requests, progress)
+
+    def fetch_mutual_friends(self):
+        requests = []
+        friends = self.person.friends
+        for friend in friends:
+            requests.append({
+                'id': friend.fb_id,
+                'request': str(self.person.fb_id) + '/mutualfriends/' + str(friend.fb_id)
+            })
+        progress = {
+            'from': 15, 'to': 20,
+            'description': 'Collecting data about mutual friends'
+        }
+        self.store_api_response('mutual_friends', requests, progress)
 
     def fetch_locations(self):
-
-        self.update_progress(
-            20,
-            'Collecting your and your friends locations.'
-        )
-
         requests = []
         friends = self.person.friends
         for friend in friends:
@@ -121,70 +103,61 @@ class CreateView(View):
                 'id': friend.fb_id,
                 'request': str(friend.fb_id) + '/locations'
             })
-        api = Api(self.person.access_token)
-        requested = len(requests)
-        generator = api.request(requests)
-        fb_location_count = 0
-        for responses in generator:
-            for response in responses:
-                try:
-                    person = Person.objects.get(fb_id=response['id'])
-                except Person.DoesNotExist:
-                    continue
-                for fb_location in response['data']:
-                    fb_location_count += 1
-                    store = Store()
-                    store.fb_location_by_person(fb_location, person)
-
-            self.update_progress(
-                self.calculate_progress_by_queue(
-                    requested,
-                    len(api.queued_requests),
-                    20,
-                    50
-                ),
-                'Collecting your and your friends locations (%s collected).'
-                % fb_location_count
-            )
+        progress = {
+            'from': 20, 'to': 60,
+            'description': 'Collecting your and your friends locations'
+        }
+        self.store_api_response('locations', requests, progress)
 
     def fetch_locations_by_fb_id(self):
-
-        self.update_progress(50, 'Complement incomplete location data.')
-
         requests = []
         locations = Location.objects.filter(
-            fb_id__isnull=False,
-            longitude__isnull=True,
-            latitude__isnull=True
+            fb_id__isnull=False, longitude__isnull=True, latitude__isnull=True
         )
         for location in locations:
             requests.append({
                 'id': str(location.fb_id),
                 'request': str(location.fb_id)
             })
+        progress = {
+            'from': 60, 'to': 80,
+            'description': 'Complement incomplete location data'
+        }
+        self.store_api_response('locations_by_fb_id', requests, progress)
+
+    def store_api_response(self, type, requests, progress):
+        """
+        Storing API responses first starts with fetching the data from the
+        API and storing it using the correct storage (Store) function for the
+        type of request. During this process, progress information is collected
+        and stored as well
+        """
+        self.update_progress(progress['from'], progress['description'])
         api = Api(self.person.access_token)
         requested = len(requests)
+        queued = len(api.queued_requests)
         generator = api.request(requests)
-        fb_location_count = 0
         for responses in generator:
             for response in responses:
-                try:
-                    locations = Location.objects.filter(fb_id=response['id'])
-                except Location.DoesNotExist:
-                    continue
-                fb_location_count += 1
                 store = Store()
-                store.fb_location_by_locations(response['data'], locations)
-
+                if type is 'friend_list':
+                    store.fb_relationship(response, self.person)
+                elif type is 'user_data':
+                    store.user(response, self.person)
+                elif type is 'mutual_friends':
+                    store.mutual_friends(response)
+                elif type is 'locations':
+                    store.fb_locations(response, 'person')
+                elif type is 'locations_by_fb_id':
+                    store.fb_locations(response, 'location')
+            processed_total = requested - queued
             self.update_progress(
                 self.calculate_progress_by_queue(
-                    requested,
-                    len(api.queued_requests),
-                    50,
-                    80
+                    requested, queued, progress['from'],
+                    progress['to']
                 ),
-                'Complement incomplete location data (%s complemented).'
-                % fb_location_count
+                progress['description'] +
+                ' (%s/%s).' % (processed_total, requested)
             )
 
     def fetch_geo_data(self):
@@ -203,7 +176,6 @@ class CreateView(View):
             for response in responses:
                 store = Store()
                 store.geo_data(response)
-
 
     def store_distances(self):
         self.update_progress(
@@ -227,10 +199,8 @@ class CreateView(View):
         )
         for location in locations:
             distance = fb.geo.distance(
-                location.longitude,
-                location.latitude,
-                self.person.hometown.longitude,
-                self.person.hometown.latitude
+                location.longitude, location.latitude,
+                self.person.hometown.longitude, self.person.hometown.latitude
             )
             location.hometown_distance = distance
             location.save()
@@ -249,9 +219,7 @@ class CreateView(View):
             except Location.DoesNotExist:
                 continue
             distance = fb.geo.distance(
-                location.longitude,
-                location.latitude,
-                hometown.longitude,
+                location.longitude, location.latitude, hometown.longitude,
                 hometown.latitude
             )
             location.travel_distance = distance

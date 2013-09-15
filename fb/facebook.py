@@ -205,10 +205,13 @@ class Api:
         queries = urlparse.parse_qs(parsed.query)
         path = parsed.path[1:]
         path_elements = path.split('/')
+        paging_token = ''
+        if '__paging_token' in queries:
+            paging_token = queries['__paging_token']
         return {
             'id': path_elements[0],
             'request': path,
-            'paging_token': queries['__paging_token']
+            'paging_token': paging_token
         }
 
     def batch_to_request_url(self, batch):
