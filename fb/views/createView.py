@@ -35,11 +35,11 @@ class CreateView(View):
 
     def fetch_data(self):
         self.start_progress()
-        self.fetch_friend_list()
-        self.fetch_user_data()
+        # self.fetch_friend_list()
+        # self.fetch_user_data()
         self.fetch_locations()
-        self.fetch_locations_by_fb_id()
-        self.store_distances()
+        # self.fetch_locations_by_fb_id()
+        # self.store_distances()
 
     def start_progress(self):
         """
@@ -119,7 +119,7 @@ class CreateView(View):
         for friend in friends:
             requests.append({
                 'id': friend.fb_id,
-                'request': str(friend.fb_id) + '/locations?limit=500'
+                'request': str(friend.fb_id) + '/locations'
             })
         api = Api(self.person.access_token)
         requested = len(requests)
@@ -208,7 +208,7 @@ class CreateView(View):
     def store_distances(self):
         self.update_progress(
             80,
-            "Calculating distances between all hometows.")
+            "Calculating distances between all hometowns.")
         self.store_distances_between_hometowns()
         self.update_progress(
             90,

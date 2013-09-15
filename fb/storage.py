@@ -1,4 +1,5 @@
 import datetime
+from django.utils.timezone import utc
 from models import Person, Location
 
 
@@ -6,7 +7,8 @@ class Store():
 
     def geo_data(self, geo_data):
 
-        # Get all locations from the db that have the same name as the current location name
+        # Get all locations from the db that have the same name as the current
+        # location name
         try:
             locations = Location.objects.filter(name=geo_data['providedLocation']['location'])
             location_data = geo_data['locations'][0]
@@ -49,7 +51,7 @@ class Store():
             location['name'] = data['place']['name']
             location['latitude'] = data['place']['location']['latitude']
             location['longitude'] = data['place']['location']['longitude']
-            location['created_time'] = datetime.datetime.strptime(data['created_time'][:19], "%Y-%m-%dT%H:%M:%S")
+            location['created_time'] = datetime.datetime.strptime(data['created_time'][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=utc)
         except (KeyError, TypeError):
             return None
         return location

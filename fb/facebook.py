@@ -104,6 +104,8 @@ class Api:
     current_batch = []
     queued_requests = []
     batch_size = 50
+    paging_tokens = []
+    batch_response_count = 0
 
     def __init__(self, access_token):
         self.access_token = access_token
@@ -126,18 +128,22 @@ class Api:
     def request(self, requests):
         self.queued_requests = requests
         while len(self.queued_requests) > 0:
+            print 'queued requests: ' + str(len(self.queued_requests))
+            print 'paged requests: ' + str(len(self.paging_tokens))
             batch = self.create_batch()
             batch_response = self.batch_request(batch)
+            print 'responses in batch: ' + str(self.batch_response_count)
+            print '---------------'
             yield batch_response
 
     def batch_request(self, batch):
         request_url = self.batch_to_request_url(batch)
+        self.batch_response_count = 0
         batch_response = self.call(request_url)
         return self.process_batch_response(batch_response)
 
     def create_batch(self):
         batch = []
-        print 'queued requests: ' + str(len(self.queued_requests))
         if len(self.queued_requests) > self.batch_size:
             batch += self.queued_requests[-self.batch_size:]
             del self.queued_requests[-self.batch_size:]
@@ -145,62 +151,64 @@ class Api:
             batch += self.queued_requests
             self.queued_requests = []
         self.current_batch = batch
-        print 'batch size: ' + str(len(batch))
-        print '----------'
         return batch
 
     def process_batch_response(self, batch_response):
         responses = []
         i = 0
         for response in batch_response:
-            if self.validate_response(response) is False:
-                data = {}
-            else:
-                body = json.loads(response['body'])
-                if 'data' in body:
-                    data = body['data']
-                    # if self.more_data(body):
-                    #     self.queue_paged_request(body)
-                else:
-                    data = body
+            self.validate_response(response)
+            data = self.get_data_from_response(response)
+            self.batch_response_count += len(data)
             responses.append({
                 'id': self.current_batch[i]['id'],
                 'request': self.current_batch[i]['request'],
                 'data': data
             })
+            self.check_data_availability(response)
             i += 1
         return responses
 
     def validate_response(self, response):
         if not isinstance(response, dict):
-            return False
+            raise Exception('Invalid response: no dictionary is returned')
         elif response['code'] is not 200:
             body = json.loads(response['body'])
             raise Exception('Facebook status: [' + str(response['code']) + '] ' + body['error']['message'])
-            return False
-        else:
-            return True
 
-    def queue_paged_request(self, response):
-        request_url = response['paging']['next']
+    def get_data_from_response(self, response):
+        body = json.loads(response['body'])
+        if 'data' in body:
+            data = body['data']
+        else:
+            data = body
+        return data
+
+    def check_data_availability(self, response):
+        body = json.loads(response['body'])
+        if 'paging' in body:
+            if 'next' in body['paging']:
+                self.queue_paged_request(body['paging']['next'])
+
+    def queue_paged_request(self, request_url):
         parsed_url = self.parse_request_url(request_url)
         request = {
             'id': str(parsed_url['id']),
             'request': str(parsed_url['request'])
         }
-        if request in self.queued_requests:
-            print 'exists!'
-        else:
-            print response['paging']['next']
+        if parsed_url['paging_token'] not in self.paging_tokens:
             self.queued_requests.append(request)
+        self.paging_tokens.append(parsed_url['paging_token'])
 
     def parse_request_url(self, request_url):
         parsed = urlparse.urlparse(request_url)
+        queries = urlparse.parse_qs(parsed.query)
         path = parsed.path[1:]
         path_elements = path.split('/')
         return {
             'id': path_elements[0],
-            'request': path
+            'request': path,
+            'paging_token': queries['__paging_token']
         }
 
     def batch_to_request_url(self, batch):
@@ -208,17 +216,10 @@ class Api:
         for request in batch:
             if request_string is not '?batch=[':
                 request_string += ','
-            request_string += '{"method":"GET", "relative_url":"' + str(request['request']) + '"}'
+            request_string += '{"method":"GET", "relative_url":"' + str(request['request']) + '?limit=500"}'
         request_string += ']'
         url = 'https://graph.facebook.com/' + \
               str(request_string) + \
               '&access_token=' + str(self.access_token) + \
               '&method=post'
         return url
-
-    def more_data(self, response):
-        try:
-            next = response['paging']['next']
-            return True
-        except KeyError:
-            return False

@@ -1,7 +1,6 @@
 from django.views.generic.base import View
 from django.http import HttpResponseNotFound, HttpResponse
 from fb.models import Person, Location
-from django.db.models import Max
 import json
 
 
