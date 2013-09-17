@@ -1,7 +1,7 @@
 from django.views.generic.base import View
 from django.shortcuts import render
 from django.http import HttpResponseNotFound
-from fb.models import Person, Progress
+from fb.models import Person, Progress, Relationship
 import datetime
 
 
@@ -41,73 +41,59 @@ class ReportView(View):
                 'report.html',
                 {
                     'person': self.person,
-                    'youngest_friends': self.get_five_youngest_friends(),
-                    'oldest_friends': self.get_five_oldest_friends(),
-                    'male_ages': self.get_male_ages(),
-                    'female_ages': self.get_female_ages(),
-                    'average_male_age': self.get_average_male_age(),
-                    'average_female_age': self.get_average_female_age(),
-                    'youngest_male': self.get_youngest_male(),
-                    'youngest_female': self.get_youngest_female(),
-                    'oldest_male': self.get_oldest_male(),
-                    'oldest_female': self.get_oldest_female(),
-                    'male_relationships': self.get_male_relationships(),
-                    'female_relationships': self.get_female_relationships()
+                    'male_ages': self.get_ages('M'),
+                    'female_ages': self.get_ages('F'),
+                    'average_male_age': self.get_average_age('M'),
+                    'average_female_age': self.get_average_age('F'),
+                    'youngest_friends': self.friends_ordered_by_age(None, 'ASC', 5),
+                    'oldest_friends': self.friends_ordered_by_age(None, 'DESC', 5),
+                    'youngest_male': self.friends_ordered_by_age('M', 'ASC')[0],
+                    'youngest_female': self.friends_ordered_by_age('F', 'ASC')[0],
+                    'oldest_male': self.friends_ordered_by_age('M', 'DESC')[0],
+                    'oldest_female': self.friends_ordered_by_age('F', 'DESC')[0],
+                    'male_relationships': self.get_relationships('M'),
+                    'female_relationships': self.get_relationships('F'),
+                    'top_connected_friends': self.friends_ordered_by_mutual_friend_count(None, 'DESC', 5),
+                    'least_connected_friends': self.friends_ordered_by_mutual_friend_count(None, 'ASC', 5),
+                    'male_connections': self.get_connections('M'),
+                    'female_connections': self.get_connections('F')
                 }
             )
 
-    def get_youngest_male(self):
-        return self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='M',birthday__isnull=False).order_by('birthday').reverse()[0]
+    def friends_ordered_by_age(self, gender=None, order='ASC', limit=1):
+        friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False)
+        if gender is not None:
+            friends = friends.filter(gender=gender)
+        friends = friends.order_by('-birthday')
+        if order is not 'ASC':
+            friends = friends.reverse()
+        return friends[:limit]
 
-    def get_youngest_female(self):
-        return self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='F',birthday__isnull=False).order_by('birthday').reverse()[0]
+    def get_average_age(self, gender):
+        ages = self.get_ages(gender)
+        return reduce(lambda x, y: x + y, ages) / len(ages)
 
-    def get_oldest_male(self):
-        return self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='M',birthday__isnull=False).order_by('birthday')[0]
-
-    def get_oldest_female(self):
-        return self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='F',birthday__isnull=False).order_by('birthday')[0]
-
-    def get_five_youngest_friends(self):
-        friends = self.person.friends.order_by('birthday').reverse()[:5]
-        return friends
-
-    def get_five_oldest_friends(self):
-        friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(birthday__isnull=False).order_by('birthday')[:5]
-        return friends
-
-    def get_average_male_age(self):
-        male_ages = self.get_male_ages()
-        return reduce(lambda x, y: x + y, male_ages) / len(male_ages)
-
-    def get_average_female_age(self):
-        female_ages = self.get_female_ages()
-        return reduce(lambda x, y: x + y, female_ages) / len(female_ages)
-
-    def get_male_ages(self):
+    def get_ages(self, gender):
         ages = []
-        male_friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='M',birthday__isnull=False)
-        for male_friend in male_friends:
-            ages.append(male_friend.age)
+        friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender=gender,birthday__isnull=False)
+        for friend in friends:
+            ages.append(friend.age)
         return ages
 
-    def get_female_ages(self):
-        ages = []
-        female_friends = self.person.friends.exclude(birthday__lt=datetime.date(1901, 1, 1)).filter(gender='F',birthday__isnull=False)
-        for female_friend in female_friends:
-            ages.append(female_friend.age)
-        return ages
-
-    def get_male_relationships(self):
+    def get_relationships(self, gender):
         output = []
-        male_friends = self.person.friends.filter(relationship_status__isnull=False, gender='M')
-        for male_friend in male_friends:
-            output.append(str(male_friend.relationship_status))
+        friends = self.person.friends.filter(relationship_status__isnull=False, gender=gender)
+        for friend in friends:
+            output.append(str(friend.relationship_status))
         return output
 
-    def get_female_relationships(self):
-        output = []
-        female_friends = self.person.friends.filter(relationship_status__isnull=False, gender='F')
-        for female_friend in female_friends:
-            output.append(str(female_friend.relationship_status))
-        return output
+    def get_connections(self, gender):
+        friends = self.friends_ordered_by_mutual_friend_count(gender, 'ASC', 1)
+        totals = []
+        for friend in friends:
+            totals.append(friend.mutual_friend_count)
+        return totals
+
+    def friends_ordered_by_mutual_friend_count(self, gender=None, order='ASC', limit=1):
+        friends = self.person.connected_friends(gender, order, limit)
+        return friends

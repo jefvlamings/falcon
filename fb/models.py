@@ -119,8 +119,30 @@ class Person(models.Model):
         number_of_friends = float(len(self.friends))
         return number_of_female_friends / number_of_friends * 100
 
-    def mutual_friends(self, person):
-        return person.friends
+    def connected_friends(self, gender=None, order='ASC', limit=None):
+        sql = """
+            SELECT *, Count(`a`.`from_person_id`) AS `mutual_friend_count`
+            FROM   `fb_person`
+               LEFT JOIN `fb_relationship` AS `a`
+                   ON `fb_person`.`id` = `a`.`from_person_id`
+               LEFT JOIN `fb_relationship` AS `b`
+                   ON `fb_person`.`id` = `b`.`to_person_id`
+            WHERE  `b`.`from_person_id` = %s
+            """ % self.id
+        if gender is not None:
+            sql += """
+            AND `fb_person`.`gender` = "%s"
+            """ % gender
+        sql += """
+            GROUP  BY `a`.`from_person_id`
+            ORDER  BY `mutual_friend_count` %s
+            """ % order
+        if limit is not None:
+            sql += """
+            LIMIT %s
+            """ % limit
+        friends = Person.objects.raw(sql)
+        return friends
 
     def mutual_friends_percentage(self, person):
         mutual_friends = float(len(self.mutual_friends(person)))
@@ -133,7 +155,6 @@ class Person(models.Model):
 
     def remove_relationship(self, person):
         Relationship.objects.filter(from_person=self, to_person=person).delete()
-
 
 # Relationship
 class Relationship(models.Model):

@@ -318,7 +318,7 @@ $(document).ready(function() {
     // Instantiate Demographics chart
     var demoChart = new ReportDemographics();
 
-    // Instantiate Relationshop chart
+    // Instantiate Relationship chart
     var relationshipChart = new ReportRelationships();
 
 });

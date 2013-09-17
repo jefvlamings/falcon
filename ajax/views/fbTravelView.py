@@ -21,7 +21,7 @@ class TopTravelsView(View):
         json_data = json.dumps(output)
 
         # Return the response
-        return HttpResponse(json_data, mimetype="application/json")
+        return HttpResponse(json_data, content_type="application/json")
 
     def top_travels(self):
         travels = Location.objects.filter(person_id=self.person.id).order_by('travel_distance')[::-1][:40]
@@ -45,22 +45,19 @@ class TopTravelFriendsView(View):
         json_data = json.dumps(output)
 
         # Return the response
-        return HttpResponse(json_data, mimetype="application/json")
+        return HttpResponse(json_data, content_type="application/json")
 
     def top_travel_friends(self):
-        from django.db import connection
         travels = Location.objects.raw(
             'SELECT * '
             'FROM `fb_location` AS a '
             'WHERE a.travel_distance = ('
-                'SELECT MAX(travel_distance) '
-                'FROM `fb_location` AS b '
-                'WHERE b.person_id = a.person_id'
+            '   SELECT MAX(travel_distance) '
+            '   FROM `fb_location` AS b '
+            '   WHERE b.person_id = a.person_id'
             ')'
             'ORDER BY a.travel_distance DESC '
         )[:30]
-
-        print connection.queries
         return travels
 
 
@@ -81,7 +78,7 @@ class FurthestFriendsView(View):
         json_data = json.dumps(output)
 
         # Return the response
-        return HttpResponse(json_data, mimetype="application/json")
+        return HttpResponse(json_data, content_type="application/json")
 
     def furthest_friends(self):
         hometowns = self.person.friends_hometowns.distinct().order_by('hometown_distance')[::-1][:10]
