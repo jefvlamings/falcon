@@ -5,13 +5,13 @@ from datetime import date
 # Person
 class Person(models.Model):
 
-    GENDER_CHOICES = (
+    GENDER_CHOICES = [
         ('M', 'Male'),
         ('F', 'Female'),
         ('X', 'Unknown'),
-    )
+    ]
 
-    RELATIONSHIP_CHOICES = (
+    RELATIONSHIP_CHOICES = [
         ('S', 'Single'),
         ('R', 'In a relationship'),
         ('E', 'Engaged'),
@@ -24,10 +24,13 @@ class Person(models.Model):
         ('U', 'In a civil union'),
         ('P', 'In a domestic partnership'),
         ('X', 'Unknown'),
-    )
+    ]
 
     fb_id = models.CharField(max_length=30, null=True, blank=True)
-    relationships = models.ManyToManyField('self', through='Relationship', symmetrical=False, related_name='related_to+')
+    relationships = models.ManyToManyField(
+        'self', through='Relationship', symmetrical=False,
+        related_name='related_to+'
+    )
     access_token = models.TextField(null=True, blank=True)
     hash = models.CharField(max_length=30)
     first_name = models.CharField(max_length=30, null=True, blank=True)
@@ -35,12 +38,18 @@ class Person(models.Model):
     last_name = models.CharField(max_length=30, null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     birthday = models.DateField(null=True, blank=True)
-    relationship_status = models.CharField(max_length=1, choices=RELATIONSHIP_CHOICES)
+    relationship_status = models.CharField(
+        max_length=1, choices=RELATIONSHIP_CHOICES
+    )
     significant_other = models.CharField(max_length=30, null=True, blank=True)
 
     @property
     def name(self):
-        return self.first_name + ' ' + self.last_name
+        name = self.first_name
+        if self.middle_name is not '':
+            name += ' ' + self.middle_name
+        name += self.last_name
+        return name
 
     @property
     def friends(self):
@@ -82,8 +91,12 @@ class Person(models.Model):
         try:
             birthday = self.birthday.replace(year=today.year)
         except ValueError:
-            # raised when birth date is February 29 and the current year is not a leap year
-            birthday = self.birthday.replace(year=today.year, day=self.birthday.day-1)
+            # raised when birth date is February 29 and the current year is not
+            # a leap year
+            birthday = self.birthday.replace(
+                year=today.year,
+                day=self.birthday.day-1
+            )
         if birthday > today:
             return today.year - self.birthday.year - 1
         else:
@@ -150,11 +163,14 @@ class Person(models.Model):
         return mutual_friends / friends * 100
 
     def add_relationship(self, person):
-        relationship, created = Relationship.objects.get_or_create(from_person=person, to_person=self)
+        relationship, created = Relationship.objects.get_or_create(
+            from_person=person, to_person=self
+        )
         return relationship
 
     def remove_relationship(self, person):
         Relationship.objects.filter(from_person=self, to_person=person).delete()
+
 
 # Relationship
 class Relationship(models.Model):
@@ -165,12 +181,12 @@ class Relationship(models.Model):
 # Location
 class Location(models.Model):
 
-    LOCATION_TYPES = (
+    LOCATION_TYPES = [
         ('H', 'Hometown'),
         ('C', 'Current location'),
         ('P', 'Photo'),
         ('A', 'Album'),
-    )
+    ]
 
     person = models.ForeignKey('Person')
     fb_id = models.CharField(max_length=30, null=True, blank=True)

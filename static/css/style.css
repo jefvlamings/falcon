@@ -60,3 +60,19 @@
 .box .small-text {
   font-size: 10px;
 }
+.box ul,
+.box ol {
+  margin: 0px;
+}
+.box ul li,
+.box ol li {
+  list-style-type: none;
+}
+#person .box img {
+  float: left;
+  margin: 10px;
+}
+#person .box ul {
+  float: left;
+  padding: 8px;
+}

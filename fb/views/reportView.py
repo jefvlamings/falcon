@@ -41,6 +41,7 @@ class ReportView(View):
                 'report.html',
                 {
                     'person': self.person,
+                    'friends': len(self.person.friends),
                     'male_ages': self.get_ages('M'),
                     'female_ages': self.get_ages('F'),
                     'average_male_age': self.get_average_age('M'),

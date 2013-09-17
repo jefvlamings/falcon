@@ -6,27 +6,29 @@
 
     {# General #}
     <div class="page-header text-center">
-        <h2>Personal info</h2>
+        <h2>General info</h2>
     </div>
     <div class="row">
-        <div id="person" class="col-3 col-lg-offset-5" data-id="{{ person.id }}">
-            <img src="https://graph.facebook.com/{{ person.fb_id }}/picture?type=large" alt="{{ friend.first_name }} {{ friend.last_name }}">
-            <ul>
-                <li>First name: {{ person.first_name }}</li>
-                <li>Middle name: {{ person.middle_name }}</li>
-                <li>Last name: {{ person.last_name }}</li>
-                <li>Gender: {{ person.gender }}</li>
-                <li>Birthday: {{ person.birthday }}</li>
-            </ul>
+        <div id="person" class="col-6" data-id="{{ person.id }}">
+            <div class="box">
+                <div class="box-header">
+                    <span class="large-text">Identity card</span>
+                </div>
+                <div class="box-content">
+                    <img src="https://graph.facebook.com/{{ person.fb_id }}/picture?width=80&height=97" alt="{{ person.name }}" height="97">
+                    <div class="box-col-1">
+                        <ul>
+                            <li><strong>Name:</strong> {{ person.name }}</li>
+                            <li><strong>Gender:</strong> {{ person.get_gender_display }}</li>
+                            <li><strong>Birthday:</strong> {{ person.birthday }}</li>
+                            <li><strong>Friends:</strong> {{ friends }}</li>
+                            <li><strong>Status:</strong> {{ person.get_relationship_status_display }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-
-    {# General #}
-    <div class="page-header text-center">
-        <h2>General</h2>
-    </div>
-    <div class="row">
-        <div class="col-4 col-lg-offset-4">
+         <div class="col-6">
             <div class="box">
                 <div class="box-header">
                     <span class="large-text">Friends</span>
