@@ -1,9 +1,76 @@
 import datetime
 from django.utils.timezone import utc
-from models import Person, Location
+from models import Person, Location, Post
 
 
 class Store():
+
+    def fb_posts(self, response):
+        for fb_post in response['data']:
+            self.fb_post(fb_post)
+
+    def fb_post(self, response):
+        """
+        Get or create a post for each result in the response data.
+        """
+        fb_post = self.process_post(response)
+        if fb_post is None:
+            return
+        try:
+            post = Post.objects.get(fb_id=fb_post['id'])
+        except Post.DoesNotExist:
+            post = Post.objects.create(from_person_id=fb_post['from_person_id'])
+        post.fb_id = fb_post['id']
+        post.message = fb_post['message']
+        post.picture = fb_post['picture']
+        post.link = fb_post['link']
+        post.like_count = fb_post['like_count']
+        post.created_time = fb_post['created_time']
+        post.save()
+
+    def process_post(self, data):
+        """
+        Distill all relevant information from the API response data in two
+        steps. First the essential information is processed. If one of the
+        required items doesn't exist, we return None. In the second step
+        additional information is processed
+        """
+        post = {}
+
+        # 1. Essential information
+        try:
+            post['from_fb_id'] = data['from']['id']
+            post['id'] = data['id']
+            post['created_time'] = datetime.datetime.strptime(data['created_time'][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=utc)
+        except (KeyError, TypeError):
+            return None
+
+        # 1.1. Try to fetch the person for this fb_id
+        try:
+            person = Person.objects.get(fb_id=post['from_fb_id'])
+        except Person.DoesNotExist:
+            return None
+
+        # 2. Additional information
+        if 'likes' in data:
+            post['like_count'] = data['likes'].get('count', 0)
+        else:
+            post['like_count'] = 0
+        if 'message' in data:
+            post['message'] = data['message']
+        elif 'story' in data:
+            post['message'] = data['story']
+        elif 'caption' in data:
+            post['message'] = data['caption']
+        elif 'name' in data:
+            post['message'] = data['name']
+        else:
+            post['message'] = ''
+        post['picture'] = data.get('picture', None)
+        post['link'] = data.get('link', None)
+        post['from_person_id'] = person.id
+
+        return post
 
     def geo_data(self, geo_data):
 

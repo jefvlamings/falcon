@@ -157,6 +157,8 @@ class Api:
         responses = []
         i = 0
         for response in batch_response:
+            if response is None:
+                continue
             self.validate_response(response)
             data = self.get_data_from_response(response)
             self.batch_response_count += len(data)
@@ -174,7 +176,11 @@ class Api:
             raise Exception('Invalid response: no dictionary is returned')
         elif response['code'] is not 200:
             body = json.loads(response['body'])
-            raise Exception('Facebook status: [' + str(response['code']) + '] ' + body['error']['message'])
+            try:
+                error_message = body['error']['message']
+            except KeyError:
+                error_message = body['error_msg']
+            raise Exception('Facebook status: [' + str(response['code']) + '] ' + error_message)
 
     def get_data_from_response(self, response):
         body = json.loads(response['body'])

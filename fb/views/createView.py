@@ -38,6 +38,7 @@ class CreateView(View):
         self.fetch_user_data()
         self.fetch_mutual_friends()
         self.store_mutual_friend_count()
+        self.fetch_posts()
         self.fetch_locations()
         self.fetch_locations_by_fb_id()
         self.store_distances()
@@ -132,6 +133,24 @@ class CreateView(View):
             relationship.mutual_friend_count = mutual_friend_count
             relationship.save()
 
+    def fetch_posts(self):
+        """
+        Fetches all posts from each friend (including self). A Post object
+        will be created for each post to store the fetched data
+        """
+        requests = []
+        friends = self.person.friends
+        for friend in friends:
+            requests.append({
+                'id': friend.fb_id,
+                'request': str(friend.fb_id) + '/posts'
+            })
+        progress = {
+            'from': 20, 'to': 50,
+            'description': 'Collecting your and your friends posts'
+        }
+        self.store_api_response('posts', requests, progress)
+
     def fetch_locations(self):
         """
         Fetches all locations for each friend (including self). A Location
@@ -146,7 +165,7 @@ class CreateView(View):
                 'request': str(friend.fb_id) + '/locations'
             })
         progress = {
-            'from': 20, 'to': 60,
+            'from': 50, 'to': 80,
             'description': 'Collecting your and your friends locations'
         }
         self.store_api_response('locations', requests, progress)
@@ -167,7 +186,7 @@ class CreateView(View):
                 'request': str(location.fb_id)
             })
         progress = {
-            'from': 60, 'to': 80,
+            'from': 80, 'to': 90,
             'description': 'Complement incomplete location data'
         }
         self.store_api_response('locations_by_fb_id', requests, progress)
@@ -193,6 +212,8 @@ class CreateView(View):
                     store.user(response, self.person)
                 elif type is 'mutual_friends':
                     store.mutual_friends(response)
+                elif type is 'posts':
+                    store.fb_posts(response)
                 elif type is 'locations':
                     store.fb_locations(response, 'person')
                 elif type is 'locations_by_fb_id':
@@ -229,11 +250,11 @@ class CreateView(View):
         Calculates distances between different kinds of locations
         """
         self.update_progress(
-            80,
+            90,
             "Calculating distances between all hometowns.")
         self.store_distances_between_hometowns()
         self.update_progress(
-            90,
+            95,
             "Calculating travel distances for you and each of your friends."
         )
         self.store_distances_from_hometowns()

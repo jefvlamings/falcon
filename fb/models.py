@@ -26,7 +26,7 @@ class Person(models.Model):
         ('X', 'Unknown'),
     ]
 
-    fb_id = models.CharField(max_length=30, null=True, blank=True)
+    fb_id = models.CharField(max_length=255, null=True, blank=True)
     relationships = models.ManyToManyField(
         'self', through='Relationship', symmetrical=False,
         related_name='related_to+'
@@ -187,7 +187,7 @@ class Location(models.Model):
     ]
 
     person = models.ForeignKey('Person')
-    fb_id = models.CharField(max_length=30, null=True, blank=True)
+    fb_id = models.CharField(max_length=255, null=True, blank=True)
     name = models.TextField(null=True, blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
@@ -205,3 +205,29 @@ class Progress(models.Model):
     person = models.ForeignKey('Person')
     percentage = models.FloatField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
+
+
+# Post
+class Post(models.Model):
+
+    POST_TYPES = [
+        ('P', 'Photo'),
+        ('V', 'Video'),
+        ('L', 'Link'),
+        ('S', 'Status'),
+        ('C', 'Checkin'),
+        ('Q', 'Question'),
+        ('R', 'Review'),
+        ('O', 'Offer'),
+    ]
+
+    fb_id = models.CharField(max_length=255, null=True, blank=True)
+    from_person = models.ForeignKey('Person')
+    message = models.TextField(null=True, blank=True)
+    picture = models.TextField(null=True, blank=True)
+    link = models.TextField(null=True, blank=True)
+    like_count = models.IntegerField(max_length=30, null=True, blank=True)
+    created_time = models.DateTimeField(null=True, blank=True)
+
+
+
