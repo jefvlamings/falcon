@@ -134,26 +134,23 @@ class Person(models.Model):
 
     def connected_friends(self, gender=None, order='ASC', limit=None):
         sql = """
-            SELECT *, Count(`a`.`from_person_id`) AS `mutual_friend_count`
-            FROM   `fb_person`
-               LEFT JOIN `fb_relationship` AS `a`
-                   ON `fb_person`.`id` = `a`.`from_person_id`
-               LEFT JOIN `fb_relationship` AS `b`
-                   ON `fb_person`.`id` = `b`.`to_person_id`
-            WHERE  `b`.`from_person_id` = %s
+            SELECT *
+            FROM `fb_person`
+               LEFT JOIN `fb_relationship`
+                   ON ( `fb_person`.`id` = `fb_relationship`.`to_person_id` )
+            WHERE  `fb_relationship`.`from_person_id` = 1  = %s
             """ % self.id
         if gender is not None:
             sql += """
-            AND `fb_person`.`gender` = "%s"
-            """ % gender
+                AND `fb_person`.`gender` = "%s"
+                """ % gender
         sql += """
-            GROUP  BY `a`.`from_person_id`
-            ORDER  BY `mutual_friend_count` %s
+            ORDER  BY `fb_relationship`.`mutual_friend_count` %s
             """ % order
         if limit is not None:
             sql += """
-            LIMIT %s
-            """ % limit
+                LIMIT %s
+                """ % limit
         friends = Person.objects.raw(sql)
         return friends
 
@@ -176,6 +173,7 @@ class Person(models.Model):
 class Relationship(models.Model):
     from_person = models.ForeignKey(Person, related_name='from_people')
     to_person = models.ForeignKey(Person, related_name='to_people')
+    mutual_friend_count = models.IntegerField(max_length=30, null=True, blank=True)
 
 
 # Location

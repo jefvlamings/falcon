@@ -2,7 +2,7 @@ from django.views.generic.base import View
 from django.http import HttpResponse, HttpResponseNotFound
 from fb.facebook import Api
 from fb.geo import Mapquest
-from fb.models import Person, Location, Progress
+from fb.models import Person, Location, Progress, Relationship
 from fb.storage import Store
 import fb.geo
 
@@ -37,6 +37,7 @@ class CreateView(View):
         self.fetch_friend_list()
         self.fetch_user_data()
         self.fetch_mutual_friends()
+        self.store_mutual_friend_count()
         self.fetch_locations()
         self.fetch_locations_by_fb_id()
         self.store_distances()
@@ -56,6 +57,11 @@ class CreateView(View):
             )
 
     def fetch_friend_list(self):
+        """
+        Fetches the Facebook ID for each friend. A Person object is created for
+        each friend to store this Facebook ID. The ID will be used to counter
+        reference future API calls.
+        """
         requests = [{
             'id': self.person.fb_id,
             'request': str(self.person.fb_id) + '/friends'
@@ -67,6 +73,11 @@ class CreateView(View):
         self.store_api_response('friend_list', requests, progress)
 
     def fetch_user_data(self):
+        """
+        Fetches basic user information, containing data like name, gender, age,
+        etc., for each friend of the current person. This information is added
+        to an earlier created Person object for each friend
+        """
         requests = []
         friends = self.person.friends
         for friend in friends:
@@ -82,6 +93,10 @@ class CreateView(View):
         self.store_api_response('user_data', requests, progress)
 
     def fetch_mutual_friends(self):
+        """
+        Fetches all mutual connections between the current person and each of
+        its friends. These connections are stored as relationships
+        """
         requests = []
         friends = self.person.friends
         for friend in friends:
@@ -95,7 +110,34 @@ class CreateView(View):
         }
         self.store_api_response('mutual_friends', requests, progress)
 
+    def store_mutual_friend_count(self):
+        """
+        Count for each friend how many mutual friends the current person has.
+        This number is stored in the relationship table
+        """
+        friends = self.person.friends
+        for friend in friends:
+            mutual_friend_count = 0
+            second_degree_friends = friend.friends
+            for second_degree_friend in second_degree_friends:
+                if second_degree_friend in friends:
+                    mutual_friend_count += 1
+            try:
+                relationship = Relationship.objects.get(
+                    from_person=self.person, to_person=friend
+                )
+            except Relationship.DoesNotExist:
+                continue
+
+            relationship.mutual_friend_count = mutual_friend_count
+            relationship.save()
+
     def fetch_locations(self):
+        """
+        Fetches all locations for each friend (including self). A Location
+        object will be created to store the longitude and langitude of each
+        location
+        """
         requests = []
         friends = self.person.friends
         for friend in friends:
@@ -110,6 +152,11 @@ class CreateView(View):
         self.store_api_response('locations', requests, progress)
 
     def fetch_locations_by_fb_id(self):
+        """
+        Fetches all locations for which we have a Facebook ID in the database
+        but no coordinates yet. Primarily used to complement Location date for
+        hometowns which are fetched earlier but without coordinates.
+        """
         requests = []
         locations = Location.objects.filter(
             fb_id__isnull=False, longitude__isnull=True, latitude__isnull=True
@@ -130,7 +177,7 @@ class CreateView(View):
         Storing API responses first starts with fetching the data from the
         API and storing it using the correct storage (Store) function for the
         type of request. During this process, progress information is collected
-        and stored as well
+        and stored as well.
         """
         self.update_progress(progress['from'], progress['description'])
         api = Api(self.person.access_token)
@@ -178,6 +225,9 @@ class CreateView(View):
                 store.geo_data(response)
 
     def store_distances(self):
+        """
+        Calculates distances between different kinds of locations
+        """
         self.update_progress(
             80,
             "Calculating distances between all hometowns.")
@@ -193,6 +243,11 @@ class CreateView(View):
         )
 
     def store_distances_between_hometowns(self):
+        """
+        Calculates the distances between the current persons' hometown and
+        those of its friends one by one. The location is added to the Location
+        object
+        """
         locations = Location.objects.filter(
             hometown_distance__isnull=True,
             type='H'
@@ -206,6 +261,11 @@ class CreateView(View):
             location.save()
 
     def store_distances_from_hometowns(self):
+        """
+        Calculates the distances between each persons' hometown and all of its
+        other locations. This information will be used to indicate travel
+        distances
+        """
         locations = Location.objects.filter(
             travel_distance__isnull=True,
             type='P'
@@ -226,11 +286,17 @@ class CreateView(View):
             location.save()
 
     def update_progress(self, percentage, description):
+        """
+        Helper function to quickly update the progress of the current report
+        """
         self.progress.percentage = percentage
         self.progress.description = description
         self.progress.save()
 
     def calculate_progress_by_queue(self, total, togo, begin, end):
+        """
+        Algorithm to calculate the completion percentage
+        """
         progress_range = float(end) - float(begin)
         percentage = float(begin) + (((float(total) - float(togo)) / float(total)) * float(progress_range))
         return percentage
