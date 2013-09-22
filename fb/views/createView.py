@@ -201,7 +201,6 @@ class CreateView(View):
         self.update_progress(progress['from'], progress['description'])
         api = Api(self.person.access_token)
         requested = len(requests)
-        queued = len(api.queued_requests)
         generator = api.request(requests)
         for responses in generator:
             for response in responses:
@@ -218,6 +217,7 @@ class CreateView(View):
                     store.fb_locations(response, 'person')
                 elif type is 'locations_by_fb_id':
                     store.fb_locations(response, 'location')
+            queued = len(api.queued_requests)
             processed_total = requested - queued
             self.update_progress(
                 self.calculate_progress_by_queue(

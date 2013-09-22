@@ -157,9 +157,8 @@ class Api:
         responses = []
         i = 0
         for response in batch_response:
-            if response is None:
+            if self.validate_response(response) is False:
                 continue
-            self.validate_response(response)
             data = self.get_data_from_response(response)
             self.batch_response_count += len(data)
             responses.append({
@@ -172,15 +171,22 @@ class Api:
         return responses
 
     def validate_response(self, response):
-        if not isinstance(response, dict):
-            raise Exception('Invalid response: no dictionary is returned')
+        if response is None:
+            print 'Invalid response: response is None'
+            return False
+        elif not isinstance(response, dict):
+            print 'Invalid response: no dictionary is returned'
+            return False
         elif response['code'] is not 200:
             body = json.loads(response['body'])
             try:
                 error_message = body['error']['message']
             except KeyError:
                 error_message = body['error_msg']
-            raise Exception('Facebook status: [' + str(response['code']) + '] ' + error_message)
+            print 'Facebook status: [' + str(response['code']) + '] ' + error_message
+            return False
+        else:
+            return True
 
     def get_data_from_response(self, response):
         body = json.loads(response['body'])

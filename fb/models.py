@@ -26,7 +26,7 @@ class Person(models.Model):
         ('X', 'Unknown'),
     ]
 
-    fb_id = models.CharField(max_length=255, null=True, blank=True)
+    fb_id = models.CharField(max_length=191, null=True, blank=True)
     relationships = models.ManyToManyField(
         'self', through='Relationship', symmetrical=False,
         related_name='related_to+'
@@ -187,13 +187,13 @@ class Location(models.Model):
     ]
 
     person = models.ForeignKey('Person')
-    fb_id = models.CharField(max_length=255, null=True, blank=True)
+    fb_id = models.CharField(max_length=191, null=True, blank=True)
     name = models.TextField(null=True, blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
-    postal_code = models.CharField(max_length=255, null=True, blank=True)
-    city = models.CharField(max_length=255, null=True, blank=True)
-    country = models.CharField(max_length=255, null=True, blank=True)
+    postal_code = models.CharField(max_length=191, null=True, blank=True)
+    city = models.CharField(max_length=191, null=True, blank=True)
+    country = models.CharField(max_length=191, null=True, blank=True)
     travel_distance = models.FloatField(null=True, blank=True)
     hometown_distance = models.FloatField(null=True, blank=True)
     created_time = models.DateTimeField(null=True, blank=True)
@@ -221,7 +221,7 @@ class Post(models.Model):
         ('O', 'Offer'),
     ]
 
-    fb_id = models.CharField(max_length=255, null=True, blank=True)
+    fb_id = models.CharField(max_length=191, null=True, blank=True)
     from_person = models.ForeignKey('Person')
     message = models.TextField(null=True, blank=True)
     picture = models.TextField(null=True, blank=True)
