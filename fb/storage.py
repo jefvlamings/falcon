@@ -19,7 +19,7 @@ class Store():
         try:
             post = Post.objects.get(fb_id=fb_post['id'])
         except Post.DoesNotExist:
-            post = Post.objects.create(from_person_id=fb_post['from_person_id'])
+            post = Post.objects.create(person_id=fb_post['person_id'])
         post.fb_id = fb_post['id']
         post.message = fb_post['message']
         post.picture = fb_post['picture']
@@ -53,7 +53,7 @@ class Store():
 
         # 2. Additional information
         if 'likes' in data:
-            post['like_count'] = data['likes'].get('count', 0)
+            post['like_count'] = len(data['likes'].get('data', []))
         else:
             post['like_count'] = 0
         if 'message' in data:
@@ -68,7 +68,7 @@ class Store():
             post['message'] = ''
         post['picture'] = data.get('picture', None)
         post['link'] = data.get('link', None)
-        post['from_person_id'] = person.id
+        post['person_id'] = person.id
 
         return post
 

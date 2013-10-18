@@ -225,7 +225,7 @@
         </div>
     </div>
 
-    {# Map #}
+    {# Locations #}
     <div class="page-header text-center">
         <h2>Locations</h2>
     </div>
@@ -240,6 +240,47 @@
     </div>
     <div class="row">
         <div id="map-canvas"></div>
+    </div>
+
+    {# Posts #}
+    <div class="page-header text-center">
+        <h2>Posts</h2>
+    </div>
+    <div class="row">
+        <div class="col-6">
+            <div class="box">
+                <div class="box-header">
+                    <span class="large-text">Most likes (per post)</span>
+                </div>
+                <div class="box-content">
+                    <div class="box-col-2 box-blue">
+                        <span class="large-text">{{ most_liked_male.average|floatformat:0 }}</span><br>
+                        <span class="small-text">({{ most_liked_male.name|truncatechars:25 }})</span>
+                    </div>
+                    <div class="box-col-2 box-pink">
+                        <span class="large-text">{{ most_liked_female.average|floatformat:0 }}</span><br>
+                        <span class="small-text">({{ most_liked_female.name|truncatechars:25 }})</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="box">
+                <div class="box-header">
+                    <span class="large-text">Most posts</span>
+                </div>
+                <div class="box-content">
+                    <div class="box-col-2 box-blue">
+                        <span class="large-text">{{ most_active_male.total }}</span><br>
+                        <span class="small-text">({{ most_active_male.name|truncatechars:25 }})</span>
+                    </div>
+                    <div class="box-col-2 box-pink">
+                        <span class="large-text">{{ most_active_female.total }}</span><br>
+                        <span class="small-text">({{ most_active_female.name|truncatechars:25 }})</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
 {% endblock %}

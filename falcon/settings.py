@@ -63,6 +63,7 @@ WSGI_APPLICATION = 'falcon.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',                               # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'OPTIONS': {'charset': 'utf8mb4'},
         'NAME': 'falcon',                                                   # Or path to database file if using sqlite3.
         'USER': 'root',                                                     # Not used with sqlite3.
         'PASSWORD': '',                                                     # Not used with sqlite3.

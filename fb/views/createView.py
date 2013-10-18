@@ -34,14 +34,14 @@ class CreateView(View):
 
     def fetch_data(self):
         self.start_progress()
-        self.fetch_friend_list()
-        self.fetch_user_data()
-        self.fetch_mutual_friends()
-        self.store_mutual_friend_count()
+        # self.fetch_friend_list()
+        # self.fetch_user_data()
+        # self.fetch_mutual_friends()
+        # self.store_mutual_friend_count()
         self.fetch_posts()
-        self.fetch_locations()
-        self.fetch_locations_by_fb_id()
-        self.store_distances()
+        # self.fetch_locations()
+        # self.fetch_locations_by_fb_id()
+        # self.store_distances()
 
     def start_progress(self):
         """

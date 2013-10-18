@@ -56,8 +56,13 @@ class ReportView(View):
                     'female_relationships': self.get_relationships('F'),
                     'top_connected_friends': self.friends_ordered_by_mutual_friend_count(None, 'DESC', 5),
                     'least_connected_friends': self.friends_ordered_by_mutual_friend_count(None, 'ASC', 5),
-                    'male_connections': self.get_connections('M'),
-                    'female_connections': self.get_connections('F')
+                    'male_connections': self.friends_ordered_by_mutual_friend_count('M', 'ASC', 1),
+                    'female_connections': self.friends_ordered_by_mutual_friend_count('F', 'ASC', 1),
+                    'posts': self.person.posts,
+                    'most_liked_male': self.friends_ordered_by_likes('M', 'DESC', 1)[0],
+                    'most_liked_female': self.friends_ordered_by_likes('F', 'DESC', 1)[0],
+                    'most_active_male': self.friends_ordered_by_post_count('M', 'DESC', 1)[0],
+                    'most_active_female': self.friends_ordered_by_post_count('F', 'DESC', 1)[0]
                 }
             )
 
@@ -88,13 +93,15 @@ class ReportView(View):
             output.append(str(friend.relationship_status))
         return output
 
-    def get_connections(self, gender):
-        friends = self.friends_ordered_by_mutual_friend_count(gender, 'ASC', 1)
-        totals = []
-        for friend in friends:
-            totals.append(friend.mutual_friend_count)
-        return totals
-
     def friends_ordered_by_mutual_friend_count(self, gender=None, order='ASC', limit=1):
-        friends = self.person.connected_friends(gender, order, limit)
+        friends = self.person.friends_by_mutual_friends(gender, order, limit)
+        return friends
+
+    def friends_ordered_by_likes(self, gender=None, order='ASC', limit=1):
+        friends = self.person.friends_by_like_average(gender, order, limit)
+        print friends
+        return friends
+
+    def friends_ordered_by_post_count(self, gender=None, order='ASC', limit=1):
+        friends = self.person.friends_by_post_count(gender, order, limit)
         return friends

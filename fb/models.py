@@ -56,6 +56,13 @@ class Person(models.Model):
         return self.relationships.all()
 
     @property
+    def posts(self):
+        try:
+            return Post.objects.filter(person=self)
+        except Post.DoesNotExist:
+            return None
+
+    @property
     def hometown(self):
         try:
             return Location.objects.get(person=self, type='H')
@@ -104,6 +111,10 @@ class Person(models.Model):
 
     @property
     def friends_hometowns(self):
+        """
+        Returns a list of Locations for the hometowns of all Persons befriended
+        with the current Person
+        """
         locations = Location.objects.filter(
             person_id__in=self.friends,
             hometown_distance__isnull=False,
@@ -113,10 +124,18 @@ class Person(models.Model):
 
     @property
     def male_friends(self):
+        """
+        Returns a list of Persons who are male and befriended with the current
+        Person
+        """
         return self.friends.filter(gender='M')
 
     @property
     def male_friends_percentage(self):
+        """
+        Calculates the percentage of male friends relatively to the total
+        amount of friends
+        """
         number_of_male_friends = float(len(self.male_friends))
         number_of_friends = float(len(self.friends))
         percentage = (number_of_male_friends / number_of_friends) * 100
@@ -124,21 +143,34 @@ class Person(models.Model):
 
     @property
     def female_friends(self):
+        """
+        Returns a list of persons who are female and befriended with the current
+        Person
+        """
         return self.friends.filter(gender='F')
 
     @property
     def female_friends_percentage(self):
+        """
+        Calculates the percentage of female friends relatively to the total
+        amount of friends
+        """
         number_of_female_friends = float(len(self.female_friends))
         number_of_friends = float(len(self.friends))
         return number_of_female_friends / number_of_friends * 100
 
-    def connected_friends(self, gender=None, order='ASC', limit=None):
+    def friends_by_mutual_friends(self, gender=None, order='ASC', limit=None):
+        """
+        Selects all friends by mutual friend count. It is possible to select by
+        gender. Ordering allows selection of least mutual friends (ASC) or most
+        mutual friends (DESC)
+        """
         sql = """
             SELECT *
             FROM `fb_person`
                LEFT JOIN `fb_relationship`
                    ON ( `fb_person`.`id` = `fb_relationship`.`to_person_id` )
-            WHERE  `fb_relationship`.`from_person_id` = 1  = %s
+            WHERE  `fb_relationship`.`from_person_id` = %s
             """ % self.id
         if gender is not None:
             sql += """
@@ -155,17 +187,92 @@ class Person(models.Model):
         return friends
 
     def mutual_friends_percentage(self, person):
+        """
+        Calculates the percentage of friends you have in common with a given
+        person
+        """
         mutual_friends = float(len(self.mutual_friends(person)))
         friends = float(len(self.friends()))
         return mutual_friends / friends * 100
 
+    def friends_by_like_average(self, gender=None, order='ASC', limit=None):
+        """
+        Selects all friends and calculates the average like count for each
+        friend. It is possible to select by gender. Ordering allows selection
+        of lowest average like count (ASC) or highest average like count (DESC)
+        """
+        sql = """
+            SELECT *, AVG(`like_count`) AS average
+            FROM `fb_person`
+                LEFT JOIN `fb_post` as a
+                    ON ( `fb_person`.`id` = a.`person_id` )
+                LEFT JOIN `fb_relationship`
+                    ON ( `fb_person`.`id` = `fb_relationship`.`to_person_id` )
+            WHERE `fb_relationship`.`from_person_id` = %s
+            """ % self.id
+        if gender is not None:
+            sql += """
+                AND `fb_person`.`gender` = "%s"
+                """ % gender
+        sql += """
+            AND a.`like_count` IS NOT NULL
+            GROUP BY `fb_person`.`id`
+            ORDER BY average %s
+        """ % order
+        if limit is not None:
+            sql += """
+                LIMIT %s
+                """ % limit
+
+        friends = Person.objects.raw(sql)
+        return friends
+
+    def friends_by_post_count(self, gender=None, order='ASC', limit=None):
+        """
+        Selects all friends and calculates the number of posts for each
+        friend. It is possible to select by gender. Ordering allows selection
+        of least amount of posts (ASC) or most amount of posts (DESC)
+        """
+        sql = """
+            SELECT *, COUNT(`like_count`) AS total
+            FROM `fb_person`
+                LEFT JOIN `fb_post` as a
+                    ON ( `fb_person`.`id` = a.`person_id` )
+                LEFT JOIN `fb_relationship`
+                    ON ( `fb_person`.`id` = `fb_relationship`.`to_person_id` )
+            WHERE `fb_relationship`.`from_person_id` = %s
+            """ % self.id
+        if gender is not None:
+            sql += """
+                AND `fb_person`.`gender` = "%s"
+                """ % gender
+        sql += """
+            GROUP BY `fb_person`.`id`
+            ORDER BY total %s
+        """ % order
+        if limit is not None:
+            sql += """
+                LIMIT %s
+                """ % limit
+
+        friends = Person.objects.raw(sql)
+        return friends
+
     def add_relationship(self, person):
+        """
+        Creates a Relationship object linking the current person and a given
+        person
+        """
         relationship, created = Relationship.objects.get_or_create(
             from_person=person, to_person=self
         )
         return relationship
 
     def remove_relationship(self, person):
+        """
+        Removes the Relationship object linking the current person and a given
+        person
+        """
         Relationship.objects.filter(from_person=self, to_person=person).delete()
 
 
@@ -222,7 +329,7 @@ class Post(models.Model):
     ]
 
     fb_id = models.CharField(max_length=191, null=True, blank=True)
-    from_person = models.ForeignKey('Person')
+    person = models.ForeignKey('Person')
     message = models.TextField(null=True, blank=True)
     picture = models.TextField(null=True, blank=True)
     link = models.TextField(null=True, blank=True)
